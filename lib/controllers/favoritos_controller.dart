@@ -3,11 +3,12 @@ import 'package:flutter/foundation.dart';
 import '../models/favorito_model.dart';
 
 /// Lógica de la pantalla de Favoritos: lista del usuario actual,
-/// buscador por nombre y filtro Todo / Series / Películas.
+/// buscador por nombre y filtro Todo / Series / Películas / Mangas /
+/// Novelas.
 class FavoritosController extends ChangeNotifier {
   List<FavoritoModel> _favoritos = const [];
   String _consulta = '';
-  String _filtro = 'todo'; // 'todo', 'serie' o 'pelicula'
+  String _filtro = 'todo'; // 'todo', 'serie', 'pelicula', 'manga' o 'novela'
   String _firma = '';
 
   /// Texto escrito en el buscador.
@@ -47,7 +48,8 @@ class FavoritosController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Cambia el filtro de tipo (Todo | Series | Películas).
+  /// Cambia el filtro de tipo (Todo | Series | Películas | Mangas |
+  /// Novelas).
   void cambiarFiltro(String nuevoFiltro) {
     if (_filtro == nuevoFiltro) return;
     _filtro = nuevoFiltro;

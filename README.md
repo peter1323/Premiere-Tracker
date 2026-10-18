@@ -4,7 +4,7 @@
 
 <h1 align="center">Premiere Tracker</h1>
 
-Aplicación de escritorio para Windows desarrollada con Flutter y Dart en Android Studio. Sirve para buscar películas, series y personas, ver cuándo se estrenan las películas y cuándo salen las temporadas y los episodios de las series (incluidas las que emiten semana a semana), y llevar un seguimiento personal: favoritos, vistos y notas de dónde se dejó cada cosa.
+Aplicación de escritorio para Windows desarrollada con Flutter y Dart en Android Studio. Sirve para buscar películas, series y personas, ver cuándo se estrenan las películas y cuándo salen las temporadas y los episodios de las series (incluidas las que emiten semana a semana), buscar mangas, manhwas, manhuas y novelas con su ficha y sus últimos capítulos, y llevar un seguimiento personal: favoritos, vistos/leídos y notas de dónde se dejó cada cosa.
 
 ## Funcionalidades
 
@@ -13,16 +13,17 @@ Aplicación de escritorio para Windows desarrollada con Flutter y Dart en Androi
 - **Selector de fuente TMDB | TVMaze**: en las series se puede cambiar entre las dos fuentes; se enlazan entre sí mediante el ID de IMDb. Si una fuente no está disponible, su opción queda desactivada.
 - **Detalle de series y películas**: póster, sinopsis, estado (en emisión, finalizada, cancelada...), fecha de estreno, géneros, puntuación, temporadas desplegables con sus episodios (número, título y fecha), el próximo episodio destacado y el **reparto con cada actor pulsable** (abre su ficha). Incluye los botones "Añadir a favoritos" y "Añadir a vistos".
 - **Fichas de persona**: foto, biografía y créditos (series y películas en las que ha participado), con enlaces a las webs de las APIs.
+- **Lectura (mangas, manhwas, manhuas y novelas)**: buscador sobre AniList con dos pestañas — **Manga / Manhwa / Manhua** y **Novelas** — lanzando las dos búsquedas en paralelo con una sola escritura. La ficha incluye portada, estado (con capítulos y tomos marcados como «?» si aún no hay total), puntuación, formato, país, fecha de inicio, **autores**, géneros, **sinopsis en español** cuando MangaDex la tiene (si no, la de AniList) y el **último capítulo publicado por idioma** (español de España, español latino e inglés) consultado a MangaDex con límite de peticiones y caché. Tiene botones de **favorito** y **marcar como leído**; los mangas guardados se abren desde Favoritos/Vistos recargando la ficha completa desde AniList.
 - **Calendario** con cuatro vistas y pestañas Series / Películas:
   - **Día** y **Semana**: flechas para cambiar de periodo y botón morado "Hoy".
   - **Mes**: rejilla con los estrenos de cada día, y selector de mes y año (de 2 años atrás a 6 años adelante).
   - **Año**: rejilla de los 12 meses con el número de estrenos de cada uno; al pulsar un mes se abre su vista Mes.
   - Los datos se cargan solo del periodo visible, respetando el límite de peticiones de TVMaze (20 cada 10 segundos, con caché en memoria).
-- **Favoritos**: lista con buscador por nombre y filtro Todo / Series / Películas.
-- **Vistos**: misma búsqueda y filtro que favoritos, con el botón 👁️ para apuntar qué ya has visto.
+- **Favoritos**: lista con buscador por nombre y filtro Todo / Series / Películas / Manga / Manhwa / Manhua / Novelas.
+- **Vistos**: misma búsqueda y filtro que favoritos, con el botón 👁️ para apuntar qué ya has visto (para los mangas se usa como **leídos**).
 - **Notas**: tabla de tres columnas (**Título | Última vista | Más datos**) para recordar dónde se dejó cada serie o película; solo el título es obligatorio, con buscador, edición y borrado; las notas recientes aparecen primero.
-- **Ajustes**: idioma (español / inglés), tema (claro / oscuro), copia de seguridad (exportar e importar **favoritos, vistos y notas** a un `.json`, compatible con copias antiguas que solo tenían favoritos), gestión de usuarios (cambiar nombre, cambiar PIN y borrar usuario) y créditos.
-- **Interfaz**: menú lateral fijo (Inicio, Calendario, Favoritos, Vistos, Notas y Ajustes), barra superior con interruptor de tema y menú de usuario, diseño Material 3 con tema claro y oscuro adaptable al redimensionar, y ventana que **arranca maximizada**.
+- **Ajustes**: idioma (español / inglés), tema (claro / oscuro), copia de seguridad (exportar e importar **favoritos, vistos y notas** a un `.json` —incluidos los mangas y novelas guardados—, compatible con copias antiguas que solo tenían favoritos), gestión de usuarios (cambiar nombre, cambiar PIN y borrar usuario) y créditos.
+- **Interfaz**: menú lateral fijo (Inicio, Lectura, Calendario, Favoritos, Vistos, Notas y Ajustes), barra superior con interruptor de tema y menú de usuario, diseño Material 3 con tema claro y oscuro adaptable al redimensionar, y ventana que **arranca maximizada**.
 
 ## Tecnologías
 
@@ -40,6 +41,8 @@ Aplicación de escritorio para Windows desarrollada con Flutter y Dart en Androi
 
 - **TMDB** (https://api.themoviedb.org/3): películas, series y personas. Requiere API key.
 - **TVMaze** (https://api.tvmaze.com): solo series, sin API key. Límite de unas 20 peticiones cada 10 segundos; la app respeta ese límite y guarda resultados en caché.
+- **AniList** (https://graphql.anilist.co): mangas, manhwas, manhuas y novelas, sin API key.
+- **MangaDex** (https://api.mangadex.org): últimos capítulos por idioma y sinopsis en español, sin API key. Límite de 5 peticiones por segundo; la app lo respeta y guarda resultados en caché.
 
 ## Arquitectura (MVC)
 
@@ -122,6 +125,7 @@ ie4uinit -show
 
 - Este producto usa la API de TMDB pero no está respaldado ni certificado por TMDB.
 - Datos de series proporcionados por [TVMaze](https://www.tvmaze.com).
+- Datos de mangas, manhwas, manhuas y novelas proporcionados por [AniList](https://anilist.co) y [MangaDex](https://mangadex.org).
 
 ## Licencia
 

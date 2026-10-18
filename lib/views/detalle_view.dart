@@ -11,6 +11,7 @@ import '../models/pelicula_model.dart';
 import '../models/persona_model.dart';
 import '../models/reparto_model.dart';
 import '../models/serie_model.dart';
+import 'manga_detalle_view.dart';
 import 'persona_view.dart';
 import 'widgets/selector_fuente.dart';
 
@@ -66,6 +67,13 @@ class DetalleView extends StatefulWidget {
   /// Abre el detalle desde un favorito guardado del usuario.
   static void abrirFavorito(
       BuildContext context, FavoritoModel favorito, String language) {
+    // Los mangas y novelas guardados abren su propia ficha (AniList y
+    // MangaDex), que no es la misma que la de series y películas.
+    if (favorito.fuente == 'anilist') {
+      MangaDetalleView.abrirFavorito(context,
+          idManga: favorito.id, language: language);
+      return;
+    }
     Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => DetalleView(
         tipo: favorito.tipo,

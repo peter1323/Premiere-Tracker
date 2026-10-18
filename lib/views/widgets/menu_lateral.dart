@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
 
-/// Menú lateral fijo con las seis secciones: Inicio, Calendario,
+/// Menú lateral fijo con las siete secciones: Inicio, Lectura, Calendario,
 /// Favoritos, Vistos, Notas y Ajustes.
 class MenuLateral extends StatelessWidget {
   final int indice;
@@ -35,6 +35,11 @@ class MenuLateral extends StatelessWidget {
           icon: const Icon(Icons.home_outlined),
           selectedIcon: const Icon(Icons.home),
           label: Text(t('inicio', idioma)),
+        ),
+        NavigationRailDestination(
+          icon: const Icon(Icons.menu_book_outlined),
+          selectedIcon: const Icon(Icons.menu_book),
+          label: Text(t('mangas', idioma)),
         ),
         NavigationRailDestination(
           icon: const Icon(Icons.calendar_month_outlined),

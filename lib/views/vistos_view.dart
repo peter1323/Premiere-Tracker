@@ -90,7 +90,8 @@ class _CuerpoVistosState extends State<_CuerpoVistos> {
             ),
           ),
           const SizedBox(height: 12),
-          // Filtro: Todo | Series | Películas
+          // Filtro: Todo | Series | Películas | Manga / Manhwa / Manhua |
+          // Novelas
           SegmentedButton<String>(
             segments: [
               ButtonSegment(value: 'todo', label: Text(t('todo', idioma))),
@@ -98,6 +99,10 @@ class _CuerpoVistosState extends State<_CuerpoVistos> {
                   value: 'serie', label: Text(t('series', idioma))),
               ButtonSegment(
                   value: 'pelicula', label: Text(t('peliculas', idioma))),
+              ButtonSegment(
+                  value: 'manga', label: Text(t('pestanaManga', idioma))),
+              ButtonSegment(
+                  value: 'novela', label: Text(t('pestanaNovelas', idioma))),
             ],
             selected: {control.filtro},
             onSelectionChanged: (nuevo) {

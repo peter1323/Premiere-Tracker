@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../models/favorito_model.dart';
+import '../models/manga_model.dart';
 import '../models/nota_model.dart';
 import '../models/pelicula_model.dart';
 import '../models/serie_model.dart';
@@ -143,6 +144,28 @@ class AppController extends ChangeNotifier {
     ));
   }
 
+  /// Añade o quita un manga (o novela) de favoritos.
+  Future<void> alternarFavoritoDeManga(MangaModel manga) async {
+    await alternarFavorito(_mangaAFavorito(manga));
+  }
+
+  /// Convierte un manga de AniList en el favorito genérico que guarda la
+  /// app: fuente 'anilist' y tipo 'manga' o 'novela' según su formato.
+  FavoritoModel _mangaAFavorito(MangaModel manga) {
+    final anio = manga.fechaInicio.length >= 4
+        ? int.tryParse(manga.fechaInicio.substring(0, 4))
+        : null;
+    return FavoritoModel(
+      tipo: manga.formato == 'NOVEL' ? 'novela' : 'manga',
+      fuente: 'anilist',
+      id: manga.id,
+      titulo: manga.titulo,
+      anio: anio,
+      posterUrl: manga.portada.isEmpty ? null : manga.portada,
+      fechaEstreno: manga.fechaInicio,
+    );
+  }
+
   /// Añade el favorito si no existe; lo quita si ya estaba.
   /// Si la misma obra está en la otra fuente (mismo título y tipo),
   /// se quita en lugar de crear una entrada duplicada.
@@ -253,6 +276,11 @@ class AppController extends ChangeNotifier {
     }
     _usuarioActual = usuario.copyWith(vistos: nuevaLista);
     await _persistir();
+  }
+
+  /// Marca o desmarca un manga como leído (en la lista de 'vistos').
+  Future<void> alternarVistoDeManga(MangaModel manga) async {
+    await alternarVisto(_mangaAFavorito(manga));
   }
 
   /// Añade un visto solo si no existe ya (para importar copias).

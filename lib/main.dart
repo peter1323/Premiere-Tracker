@@ -10,6 +10,7 @@ import 'views/ajustes_view.dart';
 import 'views/calendario_view.dart';
 import 'views/favoritos_view.dart';
 import 'views/inicio_view.dart';
+import 'views/mangas_view.dart';
 import 'views/notas_view.dart';
 import 'views/usuarios_view.dart';
 import 'views/vistos_view.dart';
@@ -215,6 +216,7 @@ class _VistaPrincipalProvisionalState
     // Las pantallas se mantienen vivas para no perder el estado
     final pantallas = const [
       InicioView(),
+      MangasView(),
       CalendarioView(),
       FavoritosView(),
       VistosView(),
