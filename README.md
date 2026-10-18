@@ -77,7 +77,7 @@ Cada vista tiene su controlador con el mismo nombre (`usuarios_view.dart` ↔ `u
    copy .env.example .env
    ```
 
-3. **Pon tu clave en `.env`**:
+3. **Pon tu clave en `.env`** El .env va en la misma carpeta que pubspec.yaml, no dentro de lib/:
    ```
    TMDB_API_KEY=TU_CLAVE_AQUI
    ```
