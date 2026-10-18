@@ -1,0 +1,255 @@
+/// Persona (actriz/actor, doblador, director...) de TMDB o TVMaze.
+class PersonaModel {
+  final int id;
+  final String fuente; // 'tmdb' o 'tvmaze'
+  final String nombre;
+  final String? fotoUrl;
+  final String departamento; // 'Actuación', 'Dirección'... ('' si no se sabe)
+  final String biografia; // '' si la fuente no la tiene (TVMaze nunca)
+  final String? cumpleanos; // fecha 'yyyy-MM-dd'
+  final String? fallecimiento; // fecha 'yyyy-MM-dd'
+  final String? lugarNacimiento; // solo TMDB
+  final String? pais; // solo TVMaze
+  final List<String> tambienConocidoComo; // solo TMDB (also_known_as)
+  final String? urlPagina; // ficha pública en la web de la fuente
+
+  // Base para las fotos de perfil de TMDB.
+  static const String _baseImagenes = 'https://image.tmdb.org/t/p/';
+
+  const PersonaModel({
+    required this.id,
+    required this.fuente,
+    required this.nombre,
+    this.fotoUrl,
+    this.departamento = '',
+    this.biografia = '',
+    this.cumpleanos,
+    this.fallecimiento,
+    this.lugarNacimiento,
+    this.pais,
+    this.tambienConocidoComo = const [],
+    this.urlPagina,
+  });
+
+  factory PersonaModel.fromJson(Map<String, dynamic> json) {
+    return PersonaModel(
+      id: json['id'] as int? ?? 0,
+      fuente: json['fuente'] as String? ?? 'tmdb',
+      nombre: json['nombre'] as String? ?? '',
+      fotoUrl: json['fotoUrl'] as String?,
+      departamento: json['departamento'] as String? ?? '',
+      biografia: json['biografia'] as String? ?? '',
+      cumpleanos: json['cumpleanos'] as String?,
+      fallecimiento: json['fallecimiento'] as String?,
+      lugarNacimiento: json['lugarNacimiento'] as String?,
+      pais: json['pais'] as String?,
+      tambienConocidoComo:
+          (json['tambienConocidoComo'] as List<dynamic>? ?? const [])
+              .map((n) => n as String)
+              .toList(),
+      urlPagina: json['urlPagina'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'fuente': fuente,
+        'nombre': nombre,
+        'fotoUrl': fotoUrl,
+        'departamento': departamento,
+        'biografia': biografia,
+        'cumpleanos': cumpleanos,
+        'fallecimiento': fallecimiento,
+        'lugarNacimiento': lugarNacimiento,
+        'pais': pais,
+        'tambienConocidoComo': tambienConocidoComo,
+        'urlPagina': urlPagina,
+      };
+
+  PersonaModel copyWith({
+    int? id,
+    String? fuente,
+    String? nombre,
+    String? fotoUrl,
+    String? departamento,
+    String? biografia,
+    String? cumpleanos,
+    String? fallecimiento,
+    String? lugarNacimiento,
+    String? pais,
+    List<String>? tambienConocidoComo,
+    String? urlPagina,
+  }) {
+    return PersonaModel(
+      id: id ?? this.id,
+      fuente: fuente ?? this.fuente,
+      nombre: nombre ?? this.nombre,
+      fotoUrl: fotoUrl ?? this.fotoUrl,
+      departamento: departamento ?? this.departamento,
+      biografia: biografia ?? this.biografia,
+      cumpleanos: cumpleanos ?? this.cumpleanos,
+      fallecimiento: fallecimiento ?? this.fallecimiento,
+      lugarNacimiento: lugarNacimiento ?? this.lugarNacimiento,
+      pais: pais ?? this.pais,
+      tambienConocidoComo: tambienConocidoComo ?? this.tambienConocidoComo,
+      urlPagina: urlPagina ?? this.urlPagina,
+    );
+  }
+
+  /// Resultado de /search/person de TMDB (datos básicos de la búsqueda).
+  factory PersonaModel.fromTmdbBusqueda(Map<String, dynamic> json) {
+    final ruta = json['profile_path'] as String?;
+    return PersonaModel(
+      id: json['id'] as int? ?? 0,
+      fuente: 'tmdb',
+      nombre: json['name'] as String? ?? '',
+      fotoUrl: ruta == null ? null : '$_baseImagenes/w500$ruta',
+      departamento: json['known_for_department'] as String? ?? '',
+    );
+  }
+
+  /// Ficha completa de /person/{id} de TMDB: biografía, nacimiento...
+  factory PersonaModel.fromTmdbDetalle(Map<String, dynamic> json) {
+    final ruta = json['profile_path'] as String?;
+    return PersonaModel(
+      id: json['id'] as int? ?? 0,
+      fuente: 'tmdb',
+      nombre: json['name'] as String? ?? '',
+      fotoUrl: ruta == null ? null : '$_baseImagenes/w500$ruta',
+      departamento: json['known_for_department'] as String? ?? '',
+      biografia: json['biography'] as String? ?? '',
+      cumpleanos: _vacioANull(json['birthday'] as String?),
+      fallecimiento: _vacioANull(json['deathday'] as String?),
+      lugarNacimiento: _vacioANull(json['place_of_birth'] as String?),
+      tambienConocidoComo:
+          (json['also_known_as'] as List<dynamic>? ?? const [])
+              .map((n) => n as String)
+              .toList(),
+    );
+  }
+
+  /// Persona de TVMaze (/people/{id} o /search/people): sin biografía,
+  /// pero con país, imagen y enlace a su página web.
+  factory PersonaModel.fromTvmaze(Map<String, dynamic> json) {
+    final imagen = json['image'];
+    final paisJson = json['country'];
+    return PersonaModel(
+      id: json['id'] as int? ?? 0,
+      fuente: 'tvmaze',
+      nombre: json['name'] as String? ?? '',
+      fotoUrl: imagen is Map<String, dynamic>
+          ? (imagen['original'] as String? ?? imagen['medium'] as String?)
+          : null,
+      cumpleanos: _vacioANull(json['birthday'] as String?),
+      fallecimiento: _vacioANull(json['deathday'] as String?),
+      pais:
+          paisJson is Map<String, dynamic> ? paisJson['name'] as String? : null,
+      urlPagina: _vacioANull(json['url'] as String?),
+    );
+  }
+
+  /// null cuando el campo viene vacío.
+  static String? _vacioANull(String? valor) =>
+      (valor == null || valor.isEmpty) ? null : valor;
+}
+
+/// Película o serie en la que una persona ha participado.
+class CreditoPersonaModel {
+  final int id; // id de la obra en su fuente
+  final String fuente; // 'tmdb' o 'tvmaze'
+  final String tipo; // 'serie' o 'pelicula'
+  final String titulo;
+  final String fecha; // 'yyyy-MM-dd' o '' si se desconoce
+  final String? posterUrl;
+  final String personaje; // '' si la fuente no lo indica
+  final double popularidad; // solo TMDB; ordena el "conocido por"
+  final double puntuacion; // de 0 a 10
+
+  // Base para las imágenes de TMDB.
+  static const String _baseImagenes = 'https://image.tmdb.org/t/p/';
+
+  const CreditoPersonaModel({
+    required this.id,
+    required this.fuente,
+    required this.tipo,
+    required this.titulo,
+    this.fecha = '',
+    this.posterUrl,
+    this.personaje = '',
+    this.popularidad = 0,
+    this.puntuacion = 0,
+  });
+
+  /// Año de la obra (null si no hay fecha).
+  int? get anio =>
+      fecha.length >= 4 ? int.tryParse(fecha.substring(0, 4)) : null;
+
+  factory CreditoPersonaModel.fromJson(Map<String, dynamic> json) {
+    return CreditoPersonaModel(
+      id: json['id'] as int? ?? 0,
+      fuente: json['fuente'] as String? ?? 'tmdb',
+      tipo: json['tipo'] as String? ?? 'serie',
+      titulo: json['titulo'] as String? ?? '',
+      fecha: json['fecha'] as String? ?? '',
+      posterUrl: json['posterUrl'] as String?,
+      personaje: json['personaje'] as String? ?? '',
+      popularidad: (json['popularidad'] as num?)?.toDouble() ?? 0,
+      puntuacion: (json['puntuacion'] as num?)?.toDouble() ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'fuente': fuente,
+        'tipo': tipo,
+        'titulo': titulo,
+        'fecha': fecha,
+        'posterUrl': posterUrl,
+        'personaje': personaje,
+        'popularidad': popularidad,
+        'puntuacion': puntuacion,
+      };
+
+  /// Crédito de TMDB (/person/{id}/combined_credits): película o serie
+  /// según 'media_type', con personaje, fecha y puntuación.
+  factory CreditoPersonaModel.fromTmdb(Map<String, dynamic> json) {
+    final esSerie = (json['media_type'] as String?) == 'tv';
+    final ruta = json['poster_path'] as String?;
+    return CreditoPersonaModel(
+      id: json['id'] as int? ?? 0,
+      fuente: 'tmdb',
+      tipo: esSerie ? 'serie' : 'pelicula',
+      titulo: (esSerie ? json['name'] : json['title']) as String? ?? '',
+      fecha: (esSerie ? json['first_air_date'] : json['release_date'])
+              as String? ??
+          '',
+      posterUrl: ruta == null ? null : '$_baseImagenes/w342$ruta',
+      personaje: json['character'] as String? ?? '',
+      popularidad: (json['popularity'] as num?)?.toDouble() ?? 0,
+      puntuacion: (json['vote_average'] as num?)?.toDouble() ?? 0,
+    );
+  }
+
+  /// Crédito de TVMaze: siempre una serie, con su show embebido
+  /// y el personaje indicado en los enlaces del crédito.
+  factory CreditoPersonaModel.fromTvmaze(
+      Map<String, dynamic> show, String personaje) {
+    final imagen = show['image'];
+    final rating = show['rating'];
+    return CreditoPersonaModel(
+      id: show['id'] as int? ?? 0,
+      fuente: 'tvmaze',
+      tipo: 'serie',
+      titulo: show['name'] as String? ?? '',
+      fecha: show['premiered'] as String? ?? '',
+      posterUrl: imagen is Map<String, dynamic>
+          ? (imagen['medium'] as String? ?? imagen['original'] as String?)
+          : null,
+      personaje: personaje,
+      popularidad: 0,
+      puntuacion: rating is Map<String, dynamic>
+          ? ((rating['average'] as num?)?.toDouble() ?? 0)
+          : 0,
+    );
+  }
+}

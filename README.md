@@ -1,0 +1,132 @@
+<p align="center">
+  <img src="assets/icon/premiere_tracker_icon.png" width="128" alt="Icono de Premiere Tracker">
+</p>
+
+<h1 align="center">Premiere Tracker</h1>
+
+Aplicación de escritorio para Windows desarrollada con Flutter y Dart en Android Studio. Sirve para buscar películas, series y personas, ver cuándo se estrenan las películas y cuándo salen las temporadas y los episodios de las series (incluidas las que emiten semana a semana), y llevar un seguimiento personal: favoritos, vistos y notas de dónde se dejó cada cosa.
+
+## Funcionalidades
+
+- **Usuarios locales con PIN**: cada usuario tiene su propio perfil con un PIN de 4 dígitos cifrado con SHA-256 (nunca en texto plano) y sus propios favoritos, vistos, notas, tema e idioma. Se entra automáticamente al escribir los 4 dígitos; si el PIN está mal se avisa y se limpia el campo, y **tras dos fallos aparece una pista con los dos primeros dígitos**. Desde el propio diálogo de acceso también se puede **cambiar el PIN** (validando antes el actual). El tema elegido se recuerda también en la pantalla de usuarios.
+- **Búsqueda global anti-fallos**: una sola caja busca **series, películas y personas a la vez** (en paralelo, con tiempos de espera de 10 s). Si una API falla, la otra sigue funcionando y se muestra un aviso claro; si fallan las dos, se avisa de "Sin conexión o servicios no disponibles". Los resultados aparecen en tarjetas con botones de favorito ❤️ y visto 👁️.
+- **Selector de fuente TMDB | TVMaze**: en las series se puede cambiar entre las dos fuentes; se enlazan entre sí mediante el ID de IMDb. Si una fuente no está disponible, su opción queda desactivada.
+- **Detalle de series y películas**: póster, sinopsis, estado (en emisión, finalizada, cancelada...), fecha de estreno, géneros, puntuación, temporadas desplegables con sus episodios (número, título y fecha), el próximo episodio destacado y el **reparto con cada actor pulsable** (abre su ficha). Incluye los botones "Añadir a favoritos" y "Añadir a vistos".
+- **Fichas de persona**: foto, biografía y créditos (series y películas en las que ha participado), con enlaces a las webs de las APIs.
+- **Calendario** con cuatro vistas y pestañas Series / Películas:
+  - **Día** y **Semana**: flechas para cambiar de periodo y botón morado "Hoy".
+  - **Mes**: rejilla con los estrenos de cada día, y selector de mes y año (de 2 años atrás a 6 años adelante).
+  - **Año**: rejilla de los 12 meses con el número de estrenos de cada uno; al pulsar un mes se abre su vista Mes.
+  - Los datos se cargan solo del periodo visible, respetando el límite de peticiones de TVMaze (20 cada 10 segundos, con caché en memoria).
+- **Favoritos**: lista con buscador por nombre y filtro Todo / Series / Películas.
+- **Vistos**: misma búsqueda y filtro que favoritos, con el botón 👁️ para apuntar qué ya has visto.
+- **Notas**: tabla de tres columnas (**Título | Última vista | Más datos**) para recordar dónde se dejó cada serie o película; solo el título es obligatorio, con buscador, edición y borrado; las notas recientes aparecen primero.
+- **Ajustes**: idioma (español / inglés), tema (claro / oscuro), copia de seguridad (exportar e importar **favoritos, vistos y notas** a un `.json`, compatible con copias antiguas que solo tenían favoritos), gestión de usuarios (cambiar nombre, cambiar PIN y borrar usuario) y créditos.
+- **Interfaz**: menú lateral fijo (Inicio, Calendario, Favoritos, Vistos, Notas y Ajustes), barra superior con interruptor de tema y menú de usuario, diseño Material 3 con tema claro y oscuro adaptable al redimensionar, y ventana que **arranca maximizada**.
+
+## Tecnologías
+
+- **Flutter / Dart** (escritorio, Windows)
+- **provider** – estado global (MVC con `ChangeNotifier`)
+- **http** – peticiones a las APIs
+- **flutter_dotenv** – lectura de la API key desde `.env`
+- **shared_preferences** – almacenamiento local en formato JSON
+- **crypto** – cifrado SHA-256 de los PIN
+- **file_picker** – exportar / importar copias de seguridad
+- **url_launcher** – enlaces a las webs de las APIs
+- **calendar_view** (fijado a 2.0.0) – vistas de Día y Semana del calendario (Mes y Año son personalizadas)
+
+## APIs usadas
+
+- **TMDB** (https://api.themoviedb.org/3): películas, series y personas. Requiere API key.
+- **TVMaze** (https://api.tvmaze.com): solo series, sin API key. Límite de unas 20 peticiones cada 10 segundos; la app respeta ese límite y guarda resultados en caché.
+
+## Arquitectura (MVC)
+
+La app sigue el patrón Modelo-Vista-Controlador:
+
+```
+lib/
+  main.dart            → Punto de entrada y temas
+  l10n/                → Textos por idioma (español e inglés)
+  models/              → Clases de datos con fromJson y toJson
+  services/            → Conexión con APIs, almacenamiento local y copia de seguridad
+  controllers/         → Lógica de cada pantalla (ChangeNotifier + provider)
+  views/               → Pantallas (solo muestran datos y llaman al controlador)
+    widgets/           → Widgets reutilizables sin lógica propia
+assets/images/         → Logo de TMDB y demás imágenes
+assets/icon/           → Icono de la app (para este README)
+```
+
+Cada vista tiene su controlador con el mismo nombre (`usuarios_view.dart` ↔ `usuarios_controller.dart`, etc.), más el `app_controller.dart` para el estado global (usuario actual, tema, idioma, favoritos, vistos y notas).
+
+## Cómo ejecutarlo
+
+1. **Consigue tu API key de TMDB** (gratis):
+   - Crea una cuenta en https://www.themoviedb.org/
+   - Ve a *Settings → API* y solicita una clave (tipo "Developer").
+2. **Crea el archivo `.env`** a partir de la plantilla:
+
+   En PowerShell (o bash):
+   ```bash
+   cp .env.example .env
+   ```
+
+   En el CMD clásico de Windows:
+   ```bat
+   copy .env.example .env
+   ```
+
+3. **Pon tu clave en `.env`**:
+   ```
+   TMDB_API_KEY=TU_CLAVE_AQUI
+   ```
+   (El `.env` está en `.gitignore` y nunca se sube al repositorio.)
+4. **Instala las dependencias**:
+   ```bash
+   flutter pub get
+   ```
+5. **Ejecuta la app**:
+   ```bash
+   flutter run -d windows
+   ```
+   > Nota: para compilar en Windows puede ser necesario activar el *Modo de desarrollador* de Windows (*Configuración → Sistema → Para programadores*).
+
+Si la API key falta o es incorrecta, la app muestra un aviso claro en lugar de cerrarse.
+
+## Cómo compilar el .exe
+
+```bash
+flutter clean
+flutter pub get
+flutter build windows --release
+```
+
+El ejecutable se genera en:
+
+```
+build\windows\x64\runner\Release\Premiere Tracker.exe
+```
+
+Para usar la app en otro ordenador hay que copiar la **carpeta completa `Release`** (el `.exe`, los archivos `.dll` y la carpeta `data`), no solo el `.exe`.
+
+## Icono de la app
+
+El icono (exe y barra de títulos) sale de `windows/runner/resources/app_icon.ico`. Para cambiarlo, sustituye ese archivo por un `.ico` multiresolución (16–256 px) y vuelve a compilar. Si el Explorador de Windows se queda con el icono antiguo, refresca su caché con:
+
+```bash
+ie4uinit -show
+```
+
+## Créditos
+
+- Este producto usa la API de TMDB pero no está respaldado ni certificado por TMDB.
+- Datos de series proporcionados por [TVMaze](https://www.tvmaze.com).
+
+## Licencia
+
+Copyright (c) 2026 peter1323. Todos los derechos reservados.
+
+Este código es público solo para consulta. No está permitido copiarlo, modificarlo, distribuirlo ni usarlo en proyectos propios, ya sea total o parcialmente, sin permiso expreso del autor.
+
+Consulta el archivo [LICENSE](LICENSE).

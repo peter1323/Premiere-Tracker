@@ -1,0 +1,38 @@
+name: premiere_tracker
+description: "Premiere Tracker - Busca películas y series y consulta sus estrenos."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Gestión de estado (MVC con ChangeNotifier)
+  provider: ^6.1.2
+  # Peticiones HTTP a TMDB y TVMaze
+  http: ^1.2.0
+  # Lectura de la API key desde el archivo .env
+  flutter_dotenv: ^5.2.1
+  # Almacenamiento local por usuario (JSON en el equipo)
+  shared_preferences: ^2.3.2
+  # Cifrado SHA-256 de los PIN de usuario
+  crypto: ^3.0.3
+  # Exportar/importar copias de seguridad .json
+  file_picker: ^8.1.2
+  # Enlaces clicables (créditos de TVMaze)
+  url_launcher: ^6.3.0
+  calendar_view: 2.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - .env
+    - assets/images/
