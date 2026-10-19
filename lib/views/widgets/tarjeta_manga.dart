@@ -1,3 +1,7 @@
+// WIDGET de tarjeta para un resultado de manga (de AniList). Muestra la
+// portada, el título y el estado traducido. Al tocarla avisa con
+// onTap() para abrir la ficha. La usan la pantalla Lectura y los
+// resultados de búsqueda.
 import 'package:flutter/material.dart';
 
 import '../../models/manga_model.dart';

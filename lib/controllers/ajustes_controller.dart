@@ -1,3 +1,9 @@
+// CONTROLADOR de la pantalla de Ajustes (sección 6 del menú).
+// Reúne la lógica de idioma, tema, copia de seguridad (exportar/importar
+// JSON de favoritos, vistos y notas) y gestión de usuarios. Vive en el
+// IndexedStack de main.dart, así que NO se destruye al cambiar de sección.
+// Se comunica con AppController (que tiene el usuario real) mediante el
+// campo `app`.
 import 'package:flutter/foundation.dart';
 
 import '../models/favorito_model.dart';

@@ -1,3 +1,9 @@
+// VISTA de la pantalla Favoritos (sección 3 del menú). Muestra la lista
+// de favoritos del usuario con un buscador por nombre y un filtro de 5
+// pestañas (Todo / Series / Películas / Manga-Manhwa-Manhua / Novelas).
+// Al tocar una tarjeta abre su ficha. Solo dibuja y llama a
+// FavoritosController; la lista le llega de AppController. Vive en el
+// IndexedStack.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

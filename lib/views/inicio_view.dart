@@ -1,3 +1,8 @@
+// VISTA de la pantalla Inicio (sección 0 del menú).
+// Es el buscador general: escribe un título y muestra resultados de series
+// y películas (TMDB + TVMaze) y de mangas (AniList). Solo dibuja y llama
+// a InicioController para buscar; no toca las APIs directamente. Vive en
+// el IndexedStack de main.dart, así que conserva su estado al volver.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

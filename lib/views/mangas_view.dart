@@ -1,3 +1,8 @@
+// VISTA de la pantalla Lectura (sección 1 del menú). Es el buscador de
+// mangas, manhwas, manhuas y novelas: dos pestañas (cómics y novelas) que
+// buscan contra AniList y muestran resultados en tarjetas. Al tocar uno
+// abre su ficha (MangaDetalleView). Solo dibuja y llama a
+// MangasController. Vive en el IndexedStack.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

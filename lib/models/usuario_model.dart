@@ -1,3 +1,8 @@
+// MODELO de un usuario local de la app. Guarda su id, nombre, el hash
+// SHA-256 de su PIN (nunca el PIN en texto plano), tema, idioma y sus
+// tres listas: favoritos, vistos y notas. Es la unidad que se guarda y
+// carga entera desde AlmacenamientoService y la que se exporta en la
+// copia de seguridad. Solo campos y conversiones JSON↔objeto.
 import 'favorito_model.dart';
 import 'nota_model.dart';
 

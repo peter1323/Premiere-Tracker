@@ -1,3 +1,7 @@
+// WIDGET de la barra superior (compartida por todas las pantallas). Muestra
+// el nombre del usuario actual, el botón para cambiar de usuario (vuelve a
+// la pantalla de usuarios) y el botón de tema claro/oscuro. Se monta una
+// sola vez en main.dart, encima del IndexedStack de pantallas.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

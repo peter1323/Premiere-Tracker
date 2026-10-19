@@ -1,3 +1,9 @@
+// SERVICIO de MangaDex: la API pública (sin clave) que se usa para
+// enriquecer la ficha de un manga con el último capítulo publicado en cada
+// idioma (español de España, español latino e inglés) y, si existe, la
+// sinopsis en español. Tiene límite de 5 peticiones por segundo (respeta
+// 4/s de margen), caché en memoria y timeout; si algo falla devuelve «no
+// hay datos» en lugar de lanzar error. No dibuja nada.
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;

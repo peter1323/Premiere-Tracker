@@ -1,3 +1,8 @@
+// CONTROLADOR de la pantalla Inicio (sección 0 del menú).
+// Guarda el resultado de la búsqueda general (series y películas de TMDB
+// y TVMaze, hechas en paralelo por BusquedaService) y la fuente de series
+// seleccionada en el selector (TMDB | TVMaze). Vive en el IndexedStack,
+// así que no se destruye al cambiar de sección.
 import 'package:flutter/foundation.dart';
 
 import '../models/pelicula_model.dart';

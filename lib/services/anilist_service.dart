@@ -1,3 +1,8 @@
+// SERVICIO de AniList: la API pública (GraphQL, sin clave) de la que
+// vienen los mangas, manhwas, manhuas y novelas de la sección Lectura.
+// En AniList todo es type MANGA y lo que los separa es el formato, así
+// que se filtra por formato (MANGA/ONE_SHOT = cómics, NOVEL = novelas).
+// Tiene caché de búsquedas y timeout en cada petición.
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;

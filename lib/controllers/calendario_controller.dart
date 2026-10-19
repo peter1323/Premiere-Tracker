@@ -1,3 +1,9 @@
+// CONTROLADOR de la pantalla Calendario (sección 2 del menú).
+// Calcula los próximos estrenos de las series y películas favoritas con
+// vistas de día, semana y mes. SOLO trabaja con series y películas (los
+// mangas no se meten aquí). Pide los datos a TmdbService y TvmazeService
+// y los agrupa por día en mapas con clave 'yyyy-MM-dd'. Vive en el
+// IndexedStack, así que no se destruye al cambiar de sección.
 import 'package:flutter/foundation.dart';
 
 import '../models/episodio_model.dart';

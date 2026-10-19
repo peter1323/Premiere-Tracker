@@ -1,3 +1,7 @@
+// WIDGET selector de fuente de una serie (TMDB | TVMaze). Permite ver la
+// misma serie en la otra base de datos (se enlazan por el id de IMDb).
+// Solo dibuja dos botones y avisa a su controlador con onSeleccionar().
+// Lo usa detalle_view.dart.
 import 'package:flutter/material.dart';
 
 /// Botón segmentado para elegir la fuente de las series: TMDB | TVMaze.

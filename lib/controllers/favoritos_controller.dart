@@ -1,3 +1,9 @@
+// CONTROLADOR de la pantalla Favoritos (sección 3 del menú).
+// Guarda la lista de favoritos del usuario actual, el texto del buscador
+// y el filtro activo (Todo / Series / Películas / Manga / Novelas). La
+// lista no se guarda aquí: la recibe de AppController con syncFavoritos()
+// (que solo avisa si algo ha cambiado de verdad, para no redibujar en
+// bucle). Vive en el IndexedStack, no se destruye al cambiar de sección.
 import 'package:flutter/foundation.dart';
 
 import '../models/favorito_model.dart';

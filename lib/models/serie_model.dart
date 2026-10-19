@@ -1,3 +1,9 @@
+// MODELO de una serie (sus datos vienen de TMDB o TVMaze). Normaliza el
+// estado a unos valores fijos (en_emision, finalizada, cancelada...),
+// agrupa las temporadas y guarda el reparto y el próximo episodio. Solo
+// campos y conversiones JSON↔objeto; no hace red ni dibuja. Aquí vive
+// también TmdbRefs, la tabla de traducción de los nombres de género y
+// cargo de TMDB a texto de la app.
 import 'episodio_model.dart';
 import 'reparto_model.dart';
 

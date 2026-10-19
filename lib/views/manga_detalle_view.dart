@@ -1,3 +1,10 @@
+// VISTA de la ficha de un manga (se abre con Navigator.push). Puede abrir
+// de dos formas: con el manga ya cargado (desde los resultados de
+// Lectura) o solo con su id (desde Favoritos/Vistos), en cuyo caso trae
+// la ficha completa desde AniList al iniciar (con spinner y pantalla de
+// error si falla). Muestra portada, estado, datos, sinopsis, el último
+// capítulo por idioma (de MangaDex) y los botones de favorito y «leído».
+// Crea su MangaDetalleController, que se destruye al volver atrás.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';

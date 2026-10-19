@@ -1,3 +1,10 @@
+// CONTROLADOR de la ficha de una serie o película (se abre con
+// Navigator.push desde los resultados o desde Favoritos/Vistos).
+// Carga el título desde su fuente original (TMDB o TVMaze), permite
+// cambiar de fuente enlazando por el id de IMDb y carga los episodios de
+// cada temporada. Se crea en detalle_view.dart y se DESTRUYE al volver
+// atrás: por eso sus métodos async comprueban `if (_destruido) return;`
+// antes de notificar (si no, avisarían a un controlador ya liberado).
 import 'package:flutter/foundation.dart';
 
 import '../models/episodio_model.dart';
@@ -32,6 +39,7 @@ class DetalleController extends ChangeNotifier {
   // Episodios cargados por número de temporada
   final Map<int, List<EpisodioModel>> _episodios = {};
   bool _cargandoEpisodios = false;
+  bool _destruido = false; // true si la vista se cerró mientras cargaba
 
   DetalleController({
     required this.tipo,
@@ -52,6 +60,12 @@ class DetalleController extends ChangeNotifier {
   bool get tvmazeOk => _tvmazeOk;
   bool get cargandoEpisodios => _cargandoEpisodios;
   bool get esSerie => tipo == 'serie';
+
+  @override
+  void dispose() {
+    _destruido = true;
+    super.dispose();
+  }
 
   /// Temporadas de la serie (TMDB las trae en el detalle).
   /// En TVMaze no hay lista de temporadas: se derivan de los episodios
@@ -89,6 +103,7 @@ class DetalleController extends ChangeNotifier {
     } else {
       await _cargarSerie(_fuente, idInicial);
     }
+    if (_destruido) return; // la vista se cerró: nadie escucha ya
     _cargando = false;
     notifyListeners();
   }
@@ -212,6 +227,7 @@ class DetalleController extends ChangeNotifier {
       }
     }
 
+    if (_destruido) return; // la vista se cerró: nadie escucha ya
     _cargando = false;
     notifyListeners();
   }
@@ -238,6 +254,7 @@ class DetalleController extends ChangeNotifier {
     try {
       final episodios = await TmdbService.obtenerEpisodiosTemporada(
           idTmdb, numero, language);
+      if (_destruido) return; // la vista se cerró: nadie escucha ya
       _episodios[numero] = episodios;
     } catch (_) {
       _episodios[numero] = const []; // marca como cargada (vacía)

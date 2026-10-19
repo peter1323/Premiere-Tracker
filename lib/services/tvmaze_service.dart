@@ -1,3 +1,8 @@
+// SERVICIO de TVMaze: API pública de series (sin clave, en inglés). Es la
+// fuente alternativa a TMDB para series. Tiene límite de unas 20
+// peticiones cada 10 segundos, así que las respeta con un control de
+// ventana y guarda resultados en caché (serie, episodios y búsqueda por
+// IMDb) para no repetirlas. Cada petición lleva timeout. No dibuja nada.
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;

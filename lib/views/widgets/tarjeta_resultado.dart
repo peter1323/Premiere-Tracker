@@ -1,3 +1,8 @@
+// WIDGET de tarjeta para un resultado de serie o película. Muestra el
+// póster, el título y el año, y lleva dos botones: añadir/quitar de
+// favoritos y marcar como visto (o quitar de vistos). Los botones solo
+// avisan con onFavorito()/onVisto(); quién guarda es la vista que la usa
+// (Inicio, Favoritos o Vistos).
 import 'package:flutter/material.dart';
 
 /// Tarjeta de un resultado: póster, título, año y botones de favoritos

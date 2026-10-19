@@ -1,3 +1,8 @@
+// CONTROLADOR de la pantalla Lectura (sección 1 del menú).
+// Maneja el buscador de mangas, manhwas, manhuas y novelas contra AniList,
+// que es donde se separan por formato (MANGA/ONE_SHOT para cómics y NOVEL
+// para novelas). Vive en el IndexedStack, así que no se destruye al
+// cambiar de sección.
 import 'package:flutter/material.dart';
 
 import '../models/manga_model.dart';

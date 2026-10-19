@@ -1,3 +1,7 @@
+// VISTA de la pantalla Calendario (sección 2 del menú). Es la carcasa que
+// crea CalendarioController con ChangeNotifierProvider y le pasa el
+// calendario (widget de la carpeta widgets/). Solo dibuja la estructura y
+// delega la lógica de estrenos en el controlador. Vive en el IndexedStack.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

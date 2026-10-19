@@ -1,3 +1,8 @@
+// SERVICIO de copia de seguridad. Exporta los favoritos, vistos y notas
+// de un usuario a un archivo .json que el usuario elige (con file_picker),
+// y los importa de vuelta en otro equipo. Es genérico sobre
+// List<FavoritoModel>, así que los mangas se exportan e importan sin tocar
+// nada (mismo formato que las series y películas). No dibuja nada.
 import 'dart:convert';
 import 'dart:io';
 

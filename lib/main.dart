@@ -1,5 +1,20 @@
+// Punto de entrada y raíz de la app Premiere Tracker.
+//
+// Este archivo hace tres cosas:
+//  1. Arranca la app y carga la API key de TMDB desde el archivo `.env`
+//     (si falta, la app funciona igualmente y solo se muestra un aviso).
+//  2. Crea los controladores globales (AppController y UsuariosController)
+//     con el paquete `provider` y monta el MaterialApp con el tema y el
+//     idioma del usuario.
+//  3. Define la estructura principal: menú lateral + barra superior + las
+//     7 pantallas (Inicio, Lectura, Calendario, Favoritos, Vistos, Notas
+//     y Ajustes) en un `IndexedStack` para conservar su estado.
+//
+// Arquitectura MVC: este archivo es la «vista» raíz; la lógica vive en
+// `lib/controllers/` y el acceso a datos en `lib/services/`.
 import 'package:calendar_view/calendar_view.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 
@@ -16,6 +31,10 @@ import 'views/usuarios_view.dart';
 import 'views/vistos_view.dart';
 import 'views/widgets/barra_superior.dart';
 import 'views/widgets/menu_lateral.dart';
+
+/// Clave global del navigator raíz: permite «volver atrás» con la tecla
+/// Escape desde cualquier parte de la app (ver [_EscapeParaVolver]).
+final GlobalKey<NavigatorState> _claveNavegador = GlobalKey<NavigatorState>();
 
 /// Punto de entrada de la app.
 Future<void> main() async {
@@ -62,6 +81,10 @@ class _Aplicacion extends StatelessWidget {
     return MaterialApp(
       title: t('appName', app.idioma),
       debugShowCheckedModeBanner: false,
+      navigatorKey: _claveNavegador,
+      // La tecla Escape funciona como «volver atrás» en toda la app
+      // (cierra la ficha o el diálogo abierto). Ver [_EscapeParaVolver].
+      builder: (context, child) => _EscapeParaVolver(child: child!),
       theme: crearTemaClaro(),
       darkTheme: crearTemaOscuro(),
       themeMode: app.modoTema,
@@ -249,5 +272,40 @@ class _VistaPrincipalProvisionalState
         ],
       ),
     );
+  }
+}
+
+/// Envuelve toda la app para que la tecla Escape funcione como «volver
+/// atrás»: cierra la ficha o el diálogo que esté abierto (lo mismo que el
+/// botón de atrás). Los diálogos de `showDialog` ya se cerraban solos con
+/// Escape; aquí se añade ese comportamiento a las fichas que se abren con
+/// `Navigator.push`.
+///
+/// Si el foco está dentro de un campo de texto, Escape se ignora para no
+/// perder lo que se está escribiendo.
+class _EscapeParaVolver extends StatelessWidget {
+  const _EscapeParaVolver({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return CallbackShortcuts(
+      bindings: <ShortcutActivator, VoidCallback>{
+        SingleActivator(LogicalKeyboardKey.escape): _volverAtras,
+      },
+      child: child,
+    );
+  }
+
+  /// Cierra la ruta actual (ficha o diálogo) si la hay.
+  void _volverAtras() {
+    // Si el foco está en un campo de texto, no hacemos nada: se quiere
+    // seguir escribiendo, no navegar.
+    final foco = FocusManager.instance.primaryFocus;
+    if (foco?.context?.findAncestorWidgetOfExactType<EditableText>() != null) {
+      return;
+    }
+    _claveNavegador.currentState?.maybePop();
   }
 }

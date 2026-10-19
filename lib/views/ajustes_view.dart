@@ -1,3 +1,9 @@
+// VISTA de la pantalla Ajustes (sección 6 del menú).
+// Permite cambiar idioma y tema, hacer copia de seguridad (exportar/
+// importar JSON) y gestionar usuarios (cambiar nombre o PIN). Solo dibuja
+// y llama a AjustesController. Los diálogos (nombre, PIN) son
+// StatefulWidget que liberan sus TextEditingController en dispose() para
+// no dejarlos huérfanos tras cerrar. Vive en el IndexedStack.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';

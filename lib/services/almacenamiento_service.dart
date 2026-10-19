@@ -1,3 +1,8 @@
+// SERVICIO de almacenamiento local. Es el único sitio que guarda datos en
+// el equipo: usa shared_preferences (almacenamiento clave-valor del SO) y
+// guarda TODO bajo la clave 'usuarios' como un JSON con todos los usuarios
+// y, dentro de cada uno, sus favoritos, vistos y notas. Usa una cola de
+// escrituras para que dos guardados seguidos no se pisen. No dibuja nada.
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';

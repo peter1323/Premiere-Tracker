@@ -1,3 +1,7 @@
+// CONTROLADOR de la pantalla de usuarios (la primera que se ve, antes de
+// iniciar sesión). Carga la lista de usuarios guardados, crea usuarios
+// nuevos y valida el PIN (con AlmacenamientoService). Se crea en
+// main.dart junto a AppController y vive toda la sesión.
 import 'package:flutter/foundation.dart';
 
 import '../models/usuario_model.dart';

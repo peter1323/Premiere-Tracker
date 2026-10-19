@@ -1,3 +1,8 @@
+// SERVICIO de búsqueda combinada. Es el que usa Inicio para buscar a la
+// vez en TMDB y TVMaze: lanza las dos consultas en paralelo y es
+// anti-fallos (si una fuente cae o falla la clave, la otra sigue y se
+// avisa). También deduplica personas y enlaza títulos/actores entre una
+// fuente y otra. No dibuja nada.
 import '../models/pelicula_model.dart';
 import '../models/persona_model.dart';
 import '../models/serie_model.dart';

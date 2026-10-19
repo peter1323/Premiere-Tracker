@@ -1,3 +1,9 @@
+// SERVICIO de TMDB: la API de películas y series (la fuente principal de
+// la app). Es la ÚNICA que necesita API key, y esa clave se lee del
+// archivo .env con flutter_dotenv (nunca va escrita en el código). Sirve
+// para buscar y cargar series, películas, personas, reparto y episodios.
+// Cada petición lleva timeout; si la clave falta o está mal lanza
+// TmdbException con la marca claveIncorrecta. No dibuja nada.
 import 'dart:convert';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';

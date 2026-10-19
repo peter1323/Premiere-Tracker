@@ -1,3 +1,8 @@
+// VISTA de la pantalla Vistos (sección 4 del menú). Muestra la lista de
+// títulos vistos (o leídos, para los mangas) del usuario con un buscador
+// y un filtro de 5 pestañas (igual que Favoritos). Al tocar una tarjeta
+// abre su ficha. Solo dibuja y llama a VistosController; la lista le
+// llega de AppController. Vive en el IndexedStack.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

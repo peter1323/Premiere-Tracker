@@ -1,3 +1,8 @@
+// CONTROLADOR de la pantalla Vistos (sección 4 del menú).
+// Guarda la lista de títulos vistos (o leídos, en el caso de los mangas)
+// del usuario actual, el texto del buscador y el filtro activo. La lista
+// la recibe de AppController con syncVistos(). Vive en el IndexedStack,
+// no se destruye al cambiar de sección.
 import 'package:flutter/foundation.dart';
 
 import '../models/favorito_model.dart';

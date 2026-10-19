@@ -1,3 +1,9 @@
+// CONTROLADOR GLOBAL: el estado de toda la app. Se crea una sola vez en
+// main.dart y vive mientras la app está abierta. Guarda el usuario actual,
+// su tema, su idioma y sus listas (favoritos, vistos, notas), y las guarda
+// en el equipo con AlmacenamientoService. Todas las pantallas lo escuchan
+// con context.watch<AppController>() para reaccionar a cambios de usuario,
+// tema o idioma.
 import 'dart:io';
 
 import 'package:flutter/material.dart';

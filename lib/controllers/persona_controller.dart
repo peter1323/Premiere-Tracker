@@ -1,3 +1,11 @@
+// CONTROLADOR de la ficha de una persona (actriz, actor, director...),
+// que se abre con Navigator.push desde los resultados de búsqueda.
+// Carga sus datos y su filmografía de TMDB y TVMaze en paralelo (anti-
+// fallos: si una fuente falla, la otra sigue), enlaza la persona entre
+// ambas bases por nombre exacto y fusiona los dos resultados (TMDB manda
+// y TVMaze rellena los huecos). Se crea en persona_view.dart y se
+// DESTRUYE al volver atrás: por eso comprueba `if (_destruido) return;`
+// antes de notificar tras el await.
 import 'package:flutter/foundation.dart';
 
 import '../models/persona_model.dart';
@@ -27,6 +35,14 @@ class PersonaController extends ChangeNotifier {
         _idTvmaze =
             personaInicial.fuente == 'tvmaze' ? personaInicial.id : null;
 
+  bool _destruido = false; // true si la vista se cerró mientras cargaba
+
+  @override
+  void dispose() {
+    _destruido = true;
+    super.dispose();
+  }
+
   PersonaModel? get persona => _persona;
   List<CreditoPersonaModel> get creditos => _creditos;
   bool get cargando => _cargando;
@@ -46,6 +62,7 @@ class PersonaController extends ChangeNotifier {
       _cargarFuenteTmdb(),
       _cargarFuenteTvmaze(),
     ]);
+    if (_destruido) return; // la vista se cerró: nadie escucha ya
     final tmdb = resultados[0];
     final tvmaze = resultados[1];
 

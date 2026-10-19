@@ -1,3 +1,10 @@
+// VISTA de la pantalla Notas (sección 5 del menú). Muestra las notas del
+// usuario con un buscador por título. Una nota guarda el título del
+// título, dónde se quedó (p. ej. 'T4 E2') y un campo libre de datos. El
+// diálogo para crear/editar una nota es StatefulWidget que libera su
+// TextEditingController en dispose(). Solo dibuja y llama a
+// NotasController; las notas le llegan de AppController. Vive en el
+// IndexedStack.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

@@ -1,3 +1,10 @@
+// VISTA de la pantalla de usuarios (la primera que se ve, antes de iniciar
+// sesión). Muestra los usuarios del equipo para elegir uno y entrar con su
+// PIN, y permite crear usuarios nuevos. Los diálogos (login con PIN y
+// creación de usuario) son StatefulWidget que liberan sus
+// TextEditingController en dispose() (antes se liberaban al cerrar
+// showDialog y eso causaba un fallo de pantalla roja). Al validar el PIN
+// llama a AppController.establecerUsuario() para entrar a la app.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

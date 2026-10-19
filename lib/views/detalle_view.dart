@@ -1,3 +1,11 @@
+// VISTA de la ficha de una serie o película (se abre con Navigator.push).
+// Muestra portada, datos generales, reparto (en fila horizontal con la
+// rueda del ratón convertida en desplazamiento lateral), episodios por
+// temporada, botones de favorito/visto y el campo de nota. Crea su
+// DetalleController con ChangeNotifierProvider. El diálogo para escribir
+// la nota es StatefulWidget que libera su TextEditingController en
+// dispose(). Se destruye al volver atrás (por eso el controlador vigila
+// si fue destruido).
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

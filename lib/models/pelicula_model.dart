@@ -1,3 +1,7 @@
+// MODELO de una película (sus datos vienen de TMDB). Solo guarda campos
+// y sabe convertir la respuesta JSON de TMDB a objeto (fromTmdb) y de
+// objeto a JSON (toJson) para poder guardarlo en la copia de seguridad.
+// No hace llamadas de red ni lógica de interfaz.
 import 'reparto_model.dart';
 import 'serie_model.dart' show TmdbRefs;
 

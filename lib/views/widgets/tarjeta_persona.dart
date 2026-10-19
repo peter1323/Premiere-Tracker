@@ -1,3 +1,7 @@
+// WIDGET de tarjeta para una persona (actriz, actor, director). Muestra la
+// foto (o un marcador si no hay) y el nombre. Al tocarla avisa con
+// onTap() para abrir su ficha. La usan los resultados de búsqueda de
+// Inicio y la filmografía en persona_view.dart.
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';

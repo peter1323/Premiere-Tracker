@@ -1,3 +1,7 @@
+// WIDGET del calendario de estrenos. Dibuja las vistas de día, semana y
+// mes con el paquete calendar_view, adaptando los colores al tema claro u
+// oscuro de la app. Lo usa calendario_view.dart y le pasa las entradas ya
+// calculadas por CalendarioController (solo series y películas).
 import 'package:calendar_view/calendar_view.dart';
 import 'package:flutter/material.dart';
 

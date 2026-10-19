@@ -1,3 +1,8 @@
+// VISTA de la ficha de una persona (se abre con Navigator.push). Muestra
+// foto, nombre, cumpleaños, lugar y su filmografía en tarjetas (al tocar
+// una se abre la ficha de esa serie o película). Crea su
+// PersonaController, que carga y fusiona los datos de TMDB y TVMaze y se
+// destruye al volver atrás. Solo dibuja; la lógica está en el controlador.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';

@@ -1,3 +1,7 @@
+// WIDGET del menú lateral. Lista los 7 destinos (Inicio, Lectura,
+// Calendario, Favoritos, Vistos, Notas y Ajustes) y avisa a main.dart con
+// onSeleccionar() cuando se pulta uno, para que cambie el índice del
+// IndexedStack. No contiene lógica de datos.
 import 'package:flutter/material.dart';
 
 import '../../l10n/app_strings.dart';
