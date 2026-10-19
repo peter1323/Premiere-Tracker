@@ -108,8 +108,10 @@ flutter build windows --release
 El ejecutable se genera en:
 
 ```
-build\windows\x64\runner\Release\Premiere Tracker.exe
+build\windows\x64\runner\Release\premiere_tracker.exe
 ```
+
+(El nombre visible de la ventana, «Premiere Tracker», se cambia en `windows/runner/main.cpp`; no se debe renombrar el `.exe` con `OUTPUT_NAME` en CMake, porque `flutter run` y el botón ▶ de Android Studio buscan `premiere_tracker.exe`.)
 
 Para usar la app en otro ordenador hay que copiar la **carpeta completa `Release`** (el `.exe`, los archivos `.dll` y la carpeta `data`), no solo el `.exe`.
 

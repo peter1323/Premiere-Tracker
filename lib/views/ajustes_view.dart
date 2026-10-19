@@ -176,126 +176,37 @@ class _CuerpoAjustes extends StatelessWidget {
 
   // ===== Gestión de usuarios =====
 
+  /// Pide el nuevo nombre del usuario.
+  ///
+  /// El diálogo es un widget propio ([_DialogoNombre]) para que sus
+  /// controladores se liberen en su `dispose()` (al desmontarse), y no
+  /// justo al cerrar `showDialog`: el diálogo sigue montado mientras
+  /// dura su animación de salida y se usarían controladores ya
+  /// liberados, lo que rompía el árbol de widgets.
   Future<void> _dialogoNombre(BuildContext context, String idioma) async {
     final app = context.read<AppController>();
     final control = context.read<AjustesController>();
-    final texto = TextEditingController(text: app.nombreUsuario);
-    String? error;
 
     final guardado = await showDialog<bool>(
       context: context,
-      builder: (contextDialog) => StatefulBuilder(
-        builder: (contextDialog, setState) => AlertDialog(
-          title: Text(t('cambiarNombre', idioma)),
-          content: SizedBox(
-            width: 300,
-            child: TextField(
-              controller: texto,
-              autofocus: true,
-              decoration: InputDecoration(
-                labelText: t('nombreUsuario', idioma),
-                errorText: error,
-              ),
-              onSubmitted: (_) async {
-                final err = await control.cambiarNombre(texto.text);
-                if (err == null) {
-                  if (contextDialog.mounted) Navigator.of(contextDialog).pop(true);
-                } else {
-                  setState(() => error = t(err, idioma));
-                }
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(contextDialog).pop(),
-              child: Text(t('cancelar', idioma)),
-            ),
-            FilledButton(
-              onPressed: () async {
-                final err = await control.cambiarNombre(texto.text);
-                if (err == null) {
-                  if (contextDialog.mounted) Navigator.of(contextDialog).pop(true);
-                } else {
-                  setState(() => error = t(err, idioma));
-                }
-              },
-              child: Text(t('aceptar', idioma)),
-            ),
-          ],
-        ),
+      builder: (_) => _DialogoNombre(
+        inicial: app.nombreUsuario,
+        control: control,
+        idioma: idioma,
       ),
     );
-    texto.dispose();
     if (guardado == true && context.mounted) {
       _aviso(context, t('nombreCambiado', idioma));
     }
   }
 
+  /// Pide el PIN actual y el nuevo para cambiarlo.
   Future<void> _dialogoPin(BuildContext context,
       AjustesController control, String idioma) async {
-    final actual = TextEditingController();
-    final nuevo = TextEditingController();
-    String? error;
-
     final guardado = await showDialog<bool>(
       context: context,
-      builder: (contextDialog) => StatefulBuilder(
-        builder: (contextDialog, setState) => AlertDialog(
-          title: Text(t('cambiarPin', idioma)),
-          content: SizedBox(
-            width: 300,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: actual,
-                  obscureText: true,
-                  maxLength: 4,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: t('pinActual', idioma),
-                    counterText: '',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: nuevo,
-                  obscureText: true,
-                  maxLength: 4,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: t('nuevoPin', idioma),
-                    errorText: error,
-                    counterText: '',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(contextDialog).pop(),
-              child: Text(t('cancelar', idioma)),
-            ),
-            FilledButton(
-              onPressed: () async {
-                final err =
-                    await control.cambiarPin(actual.text, nuevo.text);
-                if (err == null) {
-                  if (contextDialog.mounted) Navigator.of(contextDialog).pop(true);
-                } else {
-                  setState(() => error = t(err, idioma));
-                }
-              },
-              child: Text(t('aceptar', idioma)),
-            ),
-          ],
-        ),
-      ),
+      builder: (_) => _DialogoCambiarPin(control: control, idioma: idioma),
     );
-    actual.dispose();
-    nuevo.dispose();
     if (guardado == true && context.mounted) {
       _aviso(context, t('pinCambiado', idioma));
     }
@@ -395,6 +306,172 @@ class _CuerpoAjustes extends StatelessWidget {
   void _aviso(BuildContext context, String mensaje) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(mensaje)),
+    );
+  }
+}
+
+/// Diálogo para cambiar el nombre del usuario.
+///
+/// Los `TextEditingController` se crean aquí y se liberan en [dispose],
+/// cuando el diálogo ya se ha desmontado (nunca al cerrar `showDialog`:
+/// mientras dura la animación de salida los TextField siguen montados).
+class _DialogoNombre extends StatefulWidget {
+  const _DialogoNombre({
+    required this.inicial,
+    required this.control,
+    required this.idioma,
+  });
+
+  final String inicial;
+  final AjustesController control;
+  final String idioma;
+
+  @override
+  State<_DialogoNombre> createState() => _DialogoNombreState();
+}
+
+class _DialogoNombreState extends State<_DialogoNombre> {
+  late final TextEditingController texto;
+  String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    texto = TextEditingController(text: widget.inicial);
+  }
+
+  @override
+  void dispose() {
+    texto.dispose();
+    super.dispose();
+  }
+
+  Future<void> guardar() async {
+    final err = await widget.control.cambiarNombre(texto.text);
+    if (!mounted) return;
+    if (err == null) {
+      Navigator.of(context).pop(true);
+    } else {
+      setState(() => error = t(err, widget.idioma));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final idioma = widget.idioma;
+    return AlertDialog(
+      title: Text(t('cambiarNombre', idioma)),
+      content: SizedBox(
+        width: 300,
+        child: TextField(
+          controller: texto,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: t('nombreUsuario', idioma),
+            errorText: error,
+          ),
+          onSubmitted: (_) => guardar(),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(t('cancelar', idioma)),
+        ),
+        FilledButton(
+          onPressed: guardar,
+          child: Text(t('aceptar', idioma)),
+        ),
+      ],
+    );
+  }
+}
+
+/// Diálogo para cambiar el PIN del usuario (actual + nuevo).
+class _DialogoCambiarPin extends StatefulWidget {
+  const _DialogoCambiarPin({required this.control, required this.idioma});
+
+  final AjustesController control;
+  final String idioma;
+
+  @override
+  State<_DialogoCambiarPin> createState() => _DialogoCambiarPinState();
+}
+
+class _DialogoCambiarPinState extends State<_DialogoCambiarPin> {
+  late final TextEditingController actual;
+  late final TextEditingController nuevo;
+  String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    actual = TextEditingController();
+    nuevo = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    actual.dispose();
+    nuevo.dispose();
+    super.dispose();
+  }
+
+  Future<void> guardar() async {
+    final err = await widget.control.cambiarPin(actual.text, nuevo.text);
+    if (!mounted) return;
+    if (err == null) {
+      Navigator.of(context).pop(true);
+    } else {
+      setState(() => error = t(err, widget.idioma));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final idioma = widget.idioma;
+    return AlertDialog(
+      title: Text(t('cambiarPin', idioma)),
+      content: SizedBox(
+        width: 300,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: actual,
+              obscureText: true,
+              maxLength: 4,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: t('pinActual', idioma),
+                counterText: '',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: nuevo,
+              obscureText: true,
+              maxLength: 4,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: t('nuevoPin', idioma),
+                errorText: error,
+                counterText: '',
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(t('cancelar', idioma)),
+        ),
+        FilledButton(
+          onPressed: guardar,
+          child: Text(t('aceptar', idioma)),
+        ),
+      ],
     );
   }
 }
