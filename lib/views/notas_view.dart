@@ -71,58 +71,80 @@ class _CuerpoNotasState extends State<_CuerpoNotas> {
 
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                t('notas', idioma),
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-              const Spacer(),
-              // Botón de añadir nota
-              FilledButton.icon(
-                onPressed: () => _abrirDialogo(app, idioma),
-                icon: const Icon(Icons.add),
-                label: Text(t('anadirNota', idioma)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Buscador por texto (título, última vista o datos extra)
-          TextField(
-            controller: widget.buscador,
-            onChanged: control.cambiarConsulta,
-            decoration: InputDecoration(
-              hintText: t('buscarNotasHint', idioma),
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: IconButton(
-                tooltip: t('cerrar', idioma),
-                icon: const Icon(Icons.clear),
-                onPressed: () {
-                  widget.buscador.clear();
-                  control.cambiarConsulta('');
-                },
+      child: LayoutBuilder(
+        builder: (context, medidas) {
+          // En alturas bajas (móvil horizontal) la página entera se
+          // desplaza y la tabla ocupa una altura fija para no quedar
+          // comprimida a píxeles; en alturas normales, igual que siempre.
+          final fijo = <Widget>[
+            Row(
+              children: [
+                Text(
+                  t('notas', idioma),
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const Spacer(),
+                // Botón de añadir nota
+                FilledButton.icon(
+                  onPressed: () => _abrirDialogo(app, idioma),
+                  icon: const Icon(Icons.add),
+                  label: Text(t('anadirNota', idioma)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Buscador por texto (título, última vista o datos extra)
+            TextField(
+              controller: widget.buscador,
+              onChanged: control.cambiarConsulta,
+              decoration: InputDecoration(
+                hintText: t('buscarNotasHint', idioma),
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: IconButton(
+                  tooltip: t('cerrar', idioma),
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    widget.buscador.clear();
+                    control.cambiarConsulta('');
+                  },
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+          ];
+
           // Tabla o estado vacío
-          Expanded(
-            child: !control.hayNotas
-                ? _EstadoVacio(
-                    icono: Icons.edit_note,
-                    texto: t('sinNotas', idioma),
-                  )
-                : notas.isEmpty
-                    ? _EstadoVacio(
-                        icono: Icons.search_off,
-                        texto: t('sinCoincidencias', idioma),
-                      )
-                    : _tabla(notas, app, idioma),
-          ),
-        ],
+          final lista = !control.hayNotas
+              ? _EstadoVacio(
+                  icono: Icons.edit_note,
+                  texto: t('sinNotas', idioma),
+                )
+              : notas.isEmpty
+              ? _EstadoVacio(
+                  icono: Icons.search_off,
+                  texto: t('sinCoincidencias', idioma),
+                )
+              : _tabla(notas, app, idioma);
+
+          if (medidas.maxHeight < 360) {
+            return SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ...fijo,
+                  SizedBox(height: 360, child: lista),
+                ],
+              ),
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ...fijo,
+              Expanded(child: lista),
+            ],
+          );
+        },
       ),
     );
   }
@@ -148,30 +170,37 @@ class _CuerpoNotasState extends State<_CuerpoNotas> {
           ],
           rows: [
             for (final nota in notas)
-              DataRow(cells: [
-                DataCell(Text(nota.titulo)),
-                DataCell(Text(nota.ultimaVista)),
-                // "Más datos" en crudo: lo que sea ancho lo cubre el
-                // desplazamiento horizontal de la tabla
-                DataCell(Text(nota.masDatos)),
-                DataCell(Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      tooltip: t('editarNota', idioma),
-                      visualDensity: VisualDensity.compact,
-                      icon: const Icon(Icons.edit_outlined),
-                      onPressed: () => _abrirDialogo(app, idioma, nota),
+              DataRow(
+                cells: [
+                  DataCell(Text(nota.titulo)),
+                  DataCell(Text(nota.ultimaVista)),
+                  // "Más datos" en crudo: lo que sea ancho lo cubre el
+                  // desplazamiento horizontal de la tabla
+                  DataCell(Text(nota.masDatos)),
+                  DataCell(
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: t('editarNota', idioma),
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.edit_outlined),
+                          onPressed: () => _abrirDialogo(app, idioma, nota),
+                        ),
+                        IconButton(
+                          tooltip: t('eliminarNota', idioma),
+                          visualDensity: VisualDensity.compact,
+                          icon: Icon(
+                            Icons.delete_outline,
+                            color: esquema.error,
+                          ),
+                          onPressed: () => app.quitarNota(nota.id),
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      tooltip: t('eliminarNota', idioma),
-                      visualDensity: VisualDensity.compact,
-                      icon: Icon(Icons.delete_outline, color: esquema.error),
-                      onPressed: () => app.quitarNota(nota.id),
-                    ),
-                  ],
-                )),
-              ]),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
@@ -179,8 +208,11 @@ class _CuerpoNotasState extends State<_CuerpoNotas> {
   }
 
   /// Abre el diálogo de nueva nota o de edición (si viene [existente]).
-  Future<void> _abrirDialogo(AppController app, String idioma,
-      [NotaModel? existente]) async {
+  Future<void> _abrirDialogo(
+    AppController app,
+    String idioma, [
+    NotaModel? existente,
+  ]) async {
     final resultado = await showDialog<NotaModel>(
       context: context,
       builder: (_) => _DialogoNota(idioma: idioma, nota: existente),
@@ -206,12 +238,15 @@ class _DialogoNota extends StatefulWidget {
 
 class _DialogoNotaState extends State<_DialogoNota> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _titulo =
-      TextEditingController(text: widget.nota?.titulo ?? '');
-  late final TextEditingController _ultimaVista =
-      TextEditingController(text: widget.nota?.ultimaVista ?? '');
-  late final TextEditingController _masDatos =
-      TextEditingController(text: widget.nota?.masDatos ?? '');
+  late final TextEditingController _titulo = TextEditingController(
+    text: widget.nota?.titulo ?? '',
+  );
+  late final TextEditingController _ultimaVista = TextEditingController(
+    text: widget.nota?.ultimaVista ?? '',
+  );
+  late final TextEditingController _masDatos = TextEditingController(
+    text: widget.nota?.masDatos ?? '',
+  );
 
   @override
   void dispose() {
@@ -225,9 +260,9 @@ class _DialogoNotaState extends State<_DialogoNota> {
   Widget build(BuildContext context) {
     final idioma = widget.idioma;
     return AlertDialog(
-      title: Text(widget.nota == null
-          ? t('anadirNota', idioma)
-          : t('editarNota', idioma)),
+      title: Text(
+        widget.nota == null ? t('anadirNota', idioma) : t('editarNota', idioma),
+      ),
       content: SizedBox(
         width: 420,
         child: Form(
@@ -278,10 +313,7 @@ class _DialogoNotaState extends State<_DialogoNota> {
           onPressed: () => Navigator.pop(context),
           child: Text(t('cerrar', idioma)),
         ),
-        FilledButton(
-          onPressed: _guardar,
-          child: Text(t('guardar', idioma)),
-        ),
+        FilledButton(onPressed: _guardar, child: Text(t('guardar', idioma))),
       ],
     );
   }
@@ -294,9 +326,15 @@ class _DialogoNotaState extends State<_DialogoNota> {
     final masDatos = _masDatos.text.trim();
     final nota = widget.nota == null
         ? NotaModel.nueva(
-            titulo: titulo, ultimaVista: ultimaVista, masDatos: masDatos)
+            titulo: titulo,
+            ultimaVista: ultimaVista,
+            masDatos: masDatos,
+          )
         : widget.nota!.copiarCon(
-            titulo: titulo, ultimaVista: ultimaVista, masDatos: masDatos);
+            titulo: titulo,
+            ultimaVista: ultimaVista,
+            masDatos: masDatos,
+          );
     Navigator.pop(context, nota);
   }
 }
