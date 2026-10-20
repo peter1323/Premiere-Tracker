@@ -43,7 +43,8 @@ dependency_overrides:
 flutter:
   uses-material-design: true
   assets:
-    - .env
+    # El .env NO se empaqueta en la app: la clave de TMDB la pone cada
+    # usuario desde la app (se guarda en preferencias privadas).
     - assets/images/
 
 # Icono de lanzamiento: PNG de 256x256 extraído del .ico de Windows para
