@@ -38,14 +38,6 @@ class CopiaSeguridadService {
       List<FavoritoModel> favoritos,
       List<FavoritoModel> vistos,
       List<NotaModel> notas) async {
-    final destino = await FilePicker.platform.saveFile(
-      dialogTitle: 'Premiere Tracker',
-      fileName: 'premiere_tracker_favoritos.json',
-      type: FileType.custom,
-      allowedExtensions: ['json'],
-    );
-    if (destino == null) return false; // el usuario canceló
-
     final datos = {
       'app': 'Premiere Tracker',
       'version': 1,
@@ -56,6 +48,28 @@ class CopiaSeguridadService {
       'notas': notas.map((n) => n.toJson()).toList(),
     };
     final texto = const JsonEncoder.withIndent('  ').convert(datos);
+
+    // En móvil no se puede elegir una ruta arbitraria: se pasan los bytes
+    // al sistema y él se encarga de guardar el archivo (null = cancelado).
+    if (Platform.isAndroid || Platform.isIOS) {
+      final guardado = await FilePicker.platform.saveFile(
+        dialogTitle: 'Premiere Tracker',
+        fileName: 'premiere_tracker_favoritos.json',
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        bytes: utf8.encode(texto),
+      );
+      return guardado != null;
+    }
+
+    // Escritorio: se elige la ruta con el diálogo y se escribe el archivo.
+    final destino = await FilePicker.platform.saveFile(
+      dialogTitle: 'Premiere Tracker',
+      fileName: 'premiere_tracker_favoritos.json',
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+    );
+    if (destino == null) return false; // el usuario canceló
     await File(destino).writeAsString(texto);
     return true;
   }

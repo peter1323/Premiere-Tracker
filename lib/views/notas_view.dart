@@ -130,45 +130,50 @@ class _CuerpoNotasState extends State<_CuerpoNotas> {
   /// Tabla con las notas: Título | Última vista | Más datos | acciones.
   Widget _tabla(List<NotaModel> notas, AppController app, String idioma) {
     final esquema = Theme.of(context).colorScheme;
+    // La tabla puede ser más ancha que la pantalla en móvil, así que
+    // permite desplazar en horizontal (ver todas las columnas) y en
+    // vertical (ver todas las filas). En escritorio, donde cabe, no se
+    // ve ningún deslizamiento.
     return SingleChildScrollView(
-      child: DataTable(
-        headingRowColor: WidgetStatePropertyAll(esquema.surfaceContainerHigh),
-        columnSpacing: 32,
-        columns: [
-          DataColumn(label: Text(t('titulo', idioma))),
-          DataColumn(label: Text(t('ultimaVista', idioma))),
-          DataColumn(label: Text(t('masDatos', idioma))),
-          const DataColumn(label: SizedBox.shrink()), // acciones
-        ],
-        rows: [
-          for (final nota in notas)
-            DataRow(cells: [
-              DataCell(Text(nota.titulo)),
-              DataCell(Text(nota.ultimaVista)),
-              // "Más datos" puede ser largo: se muestra con elipsis
-              DataCell(SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Text(nota.masDatos),
-              )),
-              DataCell(Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    tooltip: t('editarNota', idioma),
-                    visualDensity: VisualDensity.compact,
-                    icon: const Icon(Icons.edit_outlined),
-                    onPressed: () => _abrirDialogo(app, idioma, nota),
-                  ),
-                  IconButton(
-                    tooltip: t('eliminarNota', idioma),
-                    visualDensity: VisualDensity.compact,
-                    icon: Icon(Icons.delete_outline, color: esquema.error),
-                    onPressed: () => app.quitarNota(nota.id),
-                  ),
-                ],
-              )),
-            ]),
-        ],
+      scrollDirection: Axis.horizontal,
+      child: SingleChildScrollView(
+        child: DataTable(
+          headingRowColor: WidgetStatePropertyAll(esquema.surfaceContainerHigh),
+          columnSpacing: 32,
+          columns: [
+            DataColumn(label: Text(t('titulo', idioma))),
+            DataColumn(label: Text(t('ultimaVista', idioma))),
+            DataColumn(label: Text(t('masDatos', idioma))),
+            const DataColumn(label: SizedBox.shrink()), // acciones
+          ],
+          rows: [
+            for (final nota in notas)
+              DataRow(cells: [
+                DataCell(Text(nota.titulo)),
+                DataCell(Text(nota.ultimaVista)),
+                // "Más datos" en crudo: lo que sea ancho lo cubre el
+                // desplazamiento horizontal de la tabla
+                DataCell(Text(nota.masDatos)),
+                DataCell(Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      tooltip: t('editarNota', idioma),
+                      visualDensity: VisualDensity.compact,
+                      icon: const Icon(Icons.edit_outlined),
+                      onPressed: () => _abrirDialogo(app, idioma, nota),
+                    ),
+                    IconButton(
+                      tooltip: t('eliminarNota', idioma),
+                      visualDensity: VisualDensity.compact,
+                      icon: Icon(Icons.delete_outline, color: esquema.error),
+                      onPressed: () => app.quitarNota(nota.id),
+                    ),
+                  ],
+                )),
+              ]),
+          ],
+        ),
       ),
     );
   }

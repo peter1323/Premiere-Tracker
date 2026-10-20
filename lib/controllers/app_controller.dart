@@ -7,6 +7,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/favorito_model.dart';
 import '../models/manga_model.dart';
@@ -77,9 +78,16 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Cierra la aplicación en Windows.
+  /// Cierra la aplicación. En escritorio termina el proceso; en móvil
+  /// (Android/iOS) no se debe matar el proceso, así que se pide al
+  /// sistema que cierre la app (Apple rechaza las apps que se cierran
+  /// solas con exit()).
   void cerrarAplicacion() {
-    exit(0); // cierra el proceso de la app
+    if (Platform.isAndroid || Platform.isIOS) {
+      SystemNavigator.pop(); // comportamiento correcto en móvil
+    } else {
+      exit(0); // cierra el proceso de la app (Windows/Linux)
+    }
   }
 
   /// Alterna entre modo claro y oscuro.

@@ -13,6 +13,7 @@
 // Arquitectura MVC: este archivo es la «vista» raíz; la lógica vive en
 // `lib/controllers/` y el acceso a datos en `lib/services/`.
 import 'package:calendar_view/calendar_view.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -229,8 +230,9 @@ class _VistaPrincipalProvisional extends StatefulWidget {
 
 class _VistaPrincipalProvisionalState
     extends State<_VistaPrincipalProvisional> {
-  int _indice =
-      0; // 0 Inicio, 1 Calendario, 2 Favoritos, 3 Vistos, 4 Notas, 5 Ajustes
+  // Índices del IndexedStack (y de los menús): 0 Inicio, 1 Lectura,
+  // 2 Calendario, 3 Favoritos, 4 Vistos, 5 Notas y 6 Ajustes.
+  int _indice = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -247,6 +249,34 @@ class _VistaPrincipalProvisionalState
       AjustesView(),
     ];
 
+    // Contenido común: barra superior + pantalla seleccionada.
+    final contenido = Column(
+      children: [
+        const BarraSuperior(),
+        const Divider(height: 1, thickness: 1),
+        Expanded(
+          child: IndexedStack(index: _indice, children: pantallas),
+        ),
+      ],
+    );
+
+    // Móvil (Android/iOS): barra inferior de navegación, porque el raíl
+    // lateral no cabe en pantalla pequeña. SafeArea respeta la barra de
+    // estado y las muescas del dispositivo.
+    final esMovil = defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
+    if (esMovil) {
+      return Scaffold(
+        body: SafeArea(child: contenido),
+        bottomNavigationBar: MenuInferior(
+          indice: _indice,
+          onSeleccionar: (i) => setState(() => _indice = i),
+          idioma: idioma,
+        ),
+      );
+    }
+
+    // Escritorio (Windows/Linux/macOS): el raíl lateral de siempre.
     return Scaffold(
       body: Row(
         children: [
@@ -258,17 +288,7 @@ class _VistaPrincipalProvisionalState
           ),
           const VerticalDivider(width: 1, thickness: 1),
           // Contenido: barra superior + pantalla seleccionada
-          Expanded(
-            child: Column(
-              children: [
-                const BarraSuperior(),
-                const Divider(height: 1, thickness: 1),
-                Expanded(
-                  child: IndexedStack(index: _indice, children: pantallas),
-                ),
-              ],
-            ),
-          ),
+          Expanded(child: contenido),
         ],
       ),
     );
