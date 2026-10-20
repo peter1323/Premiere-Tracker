@@ -129,49 +129,70 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
 
     // Cabecera compartida: título + modos, pestañas y aviso opcional.
     final cabecera = <Widget>[
-      // Título + selector Día | Semana | Mes + botón Hoy
-      Row(
-        children: [
-          Text(
-            t('calendario', widget.idioma),
-            style: tema.textTheme.titleMedium,
-          ),
-          const Spacer(),
-          SegmentedButton<String>(
-            segments: [
-              ButtonSegment(
-                value: 'dia',
-                icon: const Icon(Icons.view_day_outlined),
-                label: Text(t('dia', widget.idioma)),
-              ),
-              ButtonSegment(
-                value: 'semana',
-                icon: const Icon(Icons.view_week_outlined),
-                label: Text(t('semana', widget.idioma)),
-              ),
-              ButtonSegment(
-                value: 'mes',
-                icon: const Icon(Icons.calendar_month_outlined),
-                label: Text(t('mes', widget.idioma)),
-              ),
-              ButtonSegment(
-                value: 'anio',
-                icon: const Icon(Icons.grid_view_outlined),
-                label: Text(t('anio', widget.idioma)),
-              ),
-            ],
+      // Título + selector Día | Semana | Mes + botón Hoy. En anchos
+      // estrechos (móvil vertical) el selector va solo con iconos y en
+      // su propia fila para no salirse por el borde ni perder "Hoy".
+      LayoutBuilder(
+        builder: (context, medidasCaja) {
+          final estrecho = medidasCaja.maxWidth < 600;
+          final segmentos = <ButtonSegment<String>>[
+            ButtonSegment(
+              value: 'dia',
+              icon: const Icon(Icons.view_day_outlined),
+              label: estrecho ? null : Text(t('dia', widget.idioma)),
+            ),
+            ButtonSegment(
+              value: 'semana',
+              icon: const Icon(Icons.view_week_outlined),
+              label: estrecho ? null : Text(t('semana', widget.idioma)),
+            ),
+            ButtonSegment(
+              value: 'mes',
+              icon: const Icon(Icons.calendar_month_outlined),
+              label: estrecho ? null : Text(t('mes', widget.idioma)),
+            ),
+            ButtonSegment(
+              value: 'anio',
+              icon: const Icon(Icons.grid_view_outlined),
+              label: estrecho ? null : Text(t('anio', widget.idioma)),
+            ),
+          ];
+          final selector = SegmentedButton<String>(
+            segments: segmentos,
             selected: {widget.modo},
             onSelectionChanged: (seleccion) => widget.onModo(seleccion.first),
-          ),
-          const SizedBox(width: 8),
+          );
           // Fondo morado (primario) para que destaque y se encuentre
           // rápido, igual que la cabecera de las vistas del calendario.
-          FilledButton.icon(
+          final hoy = FilledButton.icon(
             onPressed: _irAHoy,
             icon: const Icon(Icons.today),
             label: Text(t('hoy', widget.idioma)),
-          ),
-        ],
+          );
+          final titulo = Text(
+            t('calendario', widget.idioma),
+            style: tema.textTheme.titleMedium,
+          );
+          if (!estrecho) {
+            return Row(
+              children: [
+                titulo,
+                const Spacer(),
+                selector,
+                const SizedBox(width: 8),
+                hoy,
+              ],
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [titulo, const Spacer(), hoy]),
+              const SizedBox(height: 8),
+              selector,
+            ],
+          );
+        },
       ),
       const SizedBox(height: 4),
 
@@ -618,14 +639,20 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
         Expanded(
           child: LayoutBuilder(
             builder: (context, caja) {
-              final columnas = (caja.maxWidth / 220).floor().clamp(3, 6);
+              // En móvil vertical, 2 columnas para que cada mes quepa
+              // completo (nombre y estrenos sin solaparse); en pantallas
+              // más anchas, igual que siempre.
+              final estrecho = caja.maxWidth < 600;
+              final columnas = estrecho
+                  ? 2
+                  : (caja.maxWidth / 220).floor().clamp(3, 6);
               return GridView.builder(
                 padding: const EdgeInsets.all(12),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: columnas,
                   mainAxisSpacing: 10,
                   crossAxisSpacing: 10,
-                  childAspectRatio: 2.8,
+                  childAspectRatio: estrecho ? 2.2 : 2.8,
                 ),
                 itemCount: 12,
                 itemBuilder: (context, indice) {
@@ -690,6 +717,8 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
             children: [
               Text(
                 nombreMes(mes, widget.idioma),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
