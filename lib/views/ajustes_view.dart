@@ -55,15 +55,15 @@ class _CuerpoAjustes extends StatelessWidget {
               const SizedBox(height: 24),
 
               // ===== Idioma =====
-              Text(t('idioma', idioma),
-                  style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                t('idioma', idioma),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 8),
               SegmentedButton<String>(
                 segments: [
-                  ButtonSegment(
-                      value: 'es', label: Text(t('espanol', idioma))),
-                  ButtonSegment(
-                      value: 'en', label: Text(t('ingles', idioma))),
+                  ButtonSegment(value: 'es', label: Text(t('espanol', idioma))),
+                  ButtonSegment(value: 'en', label: Text(t('ingles', idioma))),
                 ],
                 selected: {app.idioma},
                 onSelectionChanged: (nuevo) {
@@ -73,15 +73,21 @@ class _CuerpoAjustes extends StatelessWidget {
               const SizedBox(height: 24),
 
               // ===== Tema =====
-              Text(t('tema', idioma),
-                  style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                t('tema', idioma),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 8),
               SegmentedButton<String>(
                 segments: [
                   ButtonSegment(
-                      value: 'claro', label: Text(t('modoClaro', idioma))),
+                    value: 'claro',
+                    label: Text(t('modoClaro', idioma)),
+                  ),
                   ButtonSegment(
-                      value: 'oscuro', label: Text(t('modoOscuro', idioma))),
+                    value: 'oscuro',
+                    label: Text(t('modoOscuro', idioma)),
+                  ),
                 ],
                 selected: {app.esOscuro ? 'oscuro' : 'claro'},
                 onSelectionChanged: (nuevo) {
@@ -91,10 +97,16 @@ class _CuerpoAjustes extends StatelessWidget {
               const SizedBox(height: 24),
 
               // ===== Copia de seguridad =====
-              Text(t('copiaSeguridad', idioma),
-                  style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                t('copiaSeguridad', idioma),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 8),
-              Row(
+              // Wrap: en pantallas estrechas (móvil vertical) cada botón
+              // pasa a su propia línea en lugar de salirse por el borde.
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
                 children: [
                   FilledButton.icon(
                     onPressed: control.ocupado
@@ -103,7 +115,6 @@ class _CuerpoAjustes extends StatelessWidget {
                     icon: const Icon(Icons.upload),
                     label: Text(t('exportarFavoritos', idioma)),
                   ),
-                  const SizedBox(width: 12),
                   OutlinedButton.icon(
                     onPressed: control.ocupado
                         ? null
@@ -116,11 +127,15 @@ class _CuerpoAjustes extends StatelessWidget {
               const SizedBox(height: 24),
 
               // ===== Gestión de usuarios =====
-              Text(t('gestionUsuarios', idioma),
-                  style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                t('gestionUsuarios', idioma),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 8),
-              Text(app.nombreUsuario,
-                  style: Theme.of(context).textTheme.bodyLarge),
+              Text(
+                app.nombreUsuario,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 12,
@@ -138,7 +153,8 @@ class _CuerpoAjustes extends StatelessWidget {
                   ),
                   FilledButton.icon(
                     style: FilledButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.error),
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                    ),
                     onPressed: () => _confirmarBorrar(context, control, idioma),
                     icon: const Icon(Icons.delete),
                     label: Text(t('borrarUsuario', idioma)),
@@ -148,8 +164,10 @@ class _CuerpoAjustes extends StatelessWidget {
               const SizedBox(height: 32),
 
               // ===== Créditos =====
-              Text(t('creditos', idioma),
-                  style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                t('creditos', idioma),
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 12),
               _creditos(context, idioma),
               const SizedBox(height: 24),
@@ -162,8 +180,11 @@ class _CuerpoAjustes extends StatelessWidget {
 
   // ===== Copia de seguridad =====
 
-  Future<void> _exportar(BuildContext context,
-      AjustesController control, String idioma) async {
+  Future<void> _exportar(
+    BuildContext context,
+    AjustesController control,
+    String idioma,
+  ) async {
     final clave = await control.exportarFavoritos();
     if (!context.mounted) return;
     // Avisa tanto del éxito como de un fallo real (no del cancelar)
@@ -172,8 +193,11 @@ class _CuerpoAjustes extends StatelessWidget {
     }
   }
 
-  Future<void> _importar(BuildContext context,
-      AjustesController control, String idioma) async {
+  Future<void> _importar(
+    BuildContext context,
+    AjustesController control,
+    String idioma,
+  ) async {
     final resultado = await control.importarFavoritos();
     if (!context.mounted) return;
     if (resultado.clave.isEmpty) return; // cancelado
@@ -207,8 +231,11 @@ class _CuerpoAjustes extends StatelessWidget {
   }
 
   /// Pide el PIN actual y el nuevo para cambiarlo.
-  Future<void> _dialogoPin(BuildContext context,
-      AjustesController control, String idioma) async {
+  Future<void> _dialogoPin(
+    BuildContext context,
+    AjustesController control,
+    String idioma,
+  ) async {
     final guardado = await showDialog<bool>(
       context: context,
       builder: (_) => _DialogoCambiarPin(control: control, idioma: idioma),
@@ -218,8 +245,11 @@ class _CuerpoAjustes extends StatelessWidget {
     }
   }
 
-  Future<void> _confirmarBorrar(BuildContext context,
-      AjustesController control, String idioma) async {
+  Future<void> _confirmarBorrar(
+    BuildContext context,
+    AjustesController control,
+    String idioma,
+  ) async {
     final borrar = await showDialog<bool>(
       context: context,
       builder: (contextDialog) => AlertDialog(
@@ -232,7 +262,8 @@ class _CuerpoAjustes extends StatelessWidget {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
             onPressed: () => Navigator.of(contextDialog).pop(true),
             child: Text(t('aceptar', idioma)),
           ),
@@ -289,9 +320,9 @@ class _CuerpoAjustes extends StatelessWidget {
             child: Text(
               t('tvmazeCredit', idioma),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: esquema.primary,
-                    decoration: TextDecoration.underline,
-                  ),
+                color: esquema.primary,
+                decoration: TextDecoration.underline,
+              ),
             ),
           ),
         ),
@@ -310,9 +341,8 @@ class _CuerpoAjustes extends StatelessWidget {
   // ===== Utilidades =====
 
   void _aviso(BuildContext context, String mensaje) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensaje)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(mensaje)));
   }
 }
 
@@ -384,10 +414,7 @@ class _DialogoNombreState extends State<_DialogoNombre> {
           onPressed: () => Navigator.of(context).pop(),
           child: Text(t('cancelar', idioma)),
         ),
-        FilledButton(
-          onPressed: guardar,
-          child: Text(t('aceptar', idioma)),
-        ),
+        FilledButton(onPressed: guardar, child: Text(t('aceptar', idioma))),
       ],
     );
   }
@@ -473,10 +500,7 @@ class _DialogoCambiarPinState extends State<_DialogoCambiarPin> {
           onPressed: () => Navigator.of(context).pop(),
           child: Text(t('cancelar', idioma)),
         ),
-        FilledButton(
-          onPressed: guardar,
-          child: Text(t('aceptar', idioma)),
-        ),
+        FilledButton(onPressed: guardar, child: Text(t('aceptar', idioma))),
       ],
     );
   }
