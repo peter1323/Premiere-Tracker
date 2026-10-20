@@ -72,7 +72,7 @@ class _CuerpoPersona extends StatelessWidget {
     final creditos = control.creditos;
 
     return Scaffold(
-      appBar: AppBar(title: Text(nombre)),
+      appBar: AppBar(title: Text(nombre, overflow: TextOverflow.ellipsis)),
       body: control.persona == null && control.cargando
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -145,55 +145,77 @@ class _CuerpoPersona extends StatelessWidget {
     final cumpleanos = persona?.cumpleanos;
     final lugar = persona?.lugarNacimiento ?? persona?.pais;
 
-    return Row(
+    // Datos junto a la foto: nombre, departamento y fechas.
+    final datos = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Foto de perfil (2:3) o marcador
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: SizedBox(
-            width: 140,
-            child: AspectRatio(
-              aspectRatio: 2 / 3,
-              child: persona?.fotoUrl == null
-                  ? _marcadorFoto(esquema)
-                  : Image.network(
-                      persona!.fotoUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stack) =>
-                          _marcadorFoto(esquema),
-                    ),
-            ),
+        Text(nombre, style: tema.textTheme.headlineSmall),
+        const SizedBox(height: 8),
+        // Por qué es conocido
+        if (dept.isNotEmpty)
+          Chip(
+            avatar: const Icon(Icons.star_outline, size: 18),
+            label: Text('${t('conocidoPor', idioma)}: $dept'),
           ),
-        ),
-        const SizedBox(width: 20),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(nombre, style: tema.textTheme.headlineSmall),
-              const SizedBox(height: 8),
-              // Por qué es conocido
-              if (dept.isNotEmpty)
-                Chip(
-                  avatar: const Icon(Icons.star_outline, size: 18),
-                  label: Text('${t('conocidoPor', idioma)}: $dept'),
-                ),
-              const SizedBox(height: 8),
-              if (cumpleanos != null)
-                Text('${t('nacido', idioma)}: $cumpleanos',
-                    style: tema.textTheme.bodyMedium),
-              if (fallecimiento != null)
-                Text('${t('fallecido', idioma)}: $fallecimiento',
-                    style: tema.textTheme.bodyMedium),
-              if (lugar != null && lugar.isNotEmpty)
-                Text('${t('lugarNacimiento', idioma)}: $lugar',
-                    style: tema.textTheme.bodyMedium),
-            ],
-          ),
-        ),
+        const SizedBox(height: 8),
+        if (cumpleanos != null)
+          Text('${t('nacido', idioma)}: $cumpleanos',
+              style: tema.textTheme.bodyMedium),
+        if (fallecimiento != null)
+          Text('${t('fallecido', idioma)}: $fallecimiento',
+              style: tema.textTheme.bodyMedium),
+        if (lugar != null && lugar.isNotEmpty)
+          Text('${t('lugarNacimiento', idioma)}: $lugar',
+              style: tema.textTheme.bodyMedium),
       ],
     );
+
+    // En pantallas estrechas (móvil vertical) la foto se pone arriba y
+    // el texto ocupa todo el ancho; en anchas, la foto queda al lado.
+    return LayoutBuilder(builder: (context, medidas) {
+      final estrecho = medidas.maxWidth < 600;
+      final alturaBaja = MediaQuery.of(context).size.height < 520;
+      final anchoFoto = estrecho
+          ? (medidas.maxWidth * 0.35).clamp(110.0, 150.0)
+          : (alturaBaja ? 110.0 : 140.0);
+
+      final foto = ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          width: anchoFoto,
+          child: AspectRatio(
+            aspectRatio: 2 / 3,
+            child: persona?.fotoUrl == null
+                ? _marcadorFoto(esquema)
+                : Image.network(
+                    persona!.fotoUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stack) =>
+                        _marcadorFoto(esquema),
+                  ),
+          ),
+        ),
+      );
+
+      if (estrecho) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(child: foto),
+            const SizedBox(height: 16),
+            datos,
+          ],
+        );
+      }
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          foto,
+          const SizedBox(width: 20),
+          Expanded(child: datos),
+        ],
+      );
+    });
   }
 
   /// Tarjeta de un crédito: abre el detalle de la serie o película.

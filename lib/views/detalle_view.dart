@@ -146,7 +146,7 @@ class _CuerpoDetalle extends StatelessWidget {
     final canales = control.serie?.canales ?? const [];
 
     return Scaffold(
-      appBar: AppBar(title: Text(titulo)),
+      appBar: AppBar(title: Text(titulo, overflow: TextOverflow.ellipsis)),
       body: control.cargando &&
               control.serie == null &&
               control.pelicula == null
@@ -274,96 +274,120 @@ class _CuerpoDetalle extends StatelessWidget {
                 titulo: control.pelicula!.titulo)
             : false;
 
-    return Row(
+    // Datos de la cabecera: título, estado, estreno y botones.
+    final datos = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Póster (o marcador si no hay)
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: SizedBox(
-            width: 200,
-            child: AspectRatio(
-              aspectRatio: 2 / 3,
-              child: poster == null
-                  ? _marcador(context)
-                  : Image.network(
-                      poster,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stack) =>
-                          _marcador(context),
-                    ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 24),
-        // Datos
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        Text(titulo, style: tema.textTheme.headlineSmall),
+        const SizedBox(height: 12),
+        // Estado + puntuación (estrella con la nota media)
+        if (estado.isNotEmpty || textoPuntuacion.isNotEmpty) ...[
+          Wrap(
+            spacing: 8,
             children: [
-              Text(titulo, style: tema.textTheme.headlineSmall),
-              const SizedBox(height: 12),
-              // Estado + puntuación (estrella con la nota media)
-              if (estado.isNotEmpty || textoPuntuacion.isNotEmpty) ...[
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    if (estado.isNotEmpty)
-                      Chip(
-                        label: Text(_estadoTexto(estado, idioma)),
-                        backgroundColor:
-                            Theme.of(context).colorScheme.secondaryContainer,
-                      ),
-                    if (textoPuntuacion.isNotEmpty)
-                      Tooltip(
-                        message: t('puntuacion', idioma),
-                        child: Chip(
-                          avatar: Icon(Icons.star_rounded,
-                              size: 18, color: Colors.amber),
-                          label: Text(textoPuntuacion),
-                        ),
-                      ),
-                  ],
+              if (estado.isNotEmpty)
+                Chip(
+                  label: Text(_estadoTexto(estado, idioma)),
+                  backgroundColor:
+                      Theme.of(context).colorScheme.secondaryContainer,
                 ),
-                const SizedBox(height: 12),
-              ],
-              if (estreno.isNotEmpty) ...[
-                Text('${t('estreno', idioma)}: $estreno',
-                    style: tema.textTheme.bodyMedium),
-                const SizedBox(height: 12),
-              ],
-              // Próximo episodio destacado (solo series)
-              if (esSerie && control.serie?.proximoEpisodio != null) ...[
-                _proximoEpisodio(control.serie!.proximoEpisodio!, idioma),
-                const SizedBox(height: 12),
-              ],
-              // Añadir/quitar de favoritos y de vistos
-              Row(
-                children: [
-                  FilledButton.icon(
-                    onPressed: () => _alternarFavorito(control, app),
-                    icon: Icon(esFav ? Icons.favorite : Icons.favorite_border),
-                    label: Text(esFav
-                        ? t('quitarFavoritos', idioma)
-                        : t('anadirFavoritos', idioma)),
+              if (textoPuntuacion.isNotEmpty)
+                Tooltip(
+                  message: t('puntuacion', idioma),
+                  child: Chip(
+                    avatar: Icon(Icons.star_rounded,
+                        size: 18, color: Colors.amber),
+                    label: Text(textoPuntuacion),
                   ),
-                  const SizedBox(width: 12),
-                  FilledButton.tonalIcon(
-                    onPressed: () => _alternarVisto(control, app),
-                    icon: Icon(esVisto
-                        ? Icons.visibility
-                        : Icons.visibility_outlined),
-                    label: Text(esVisto
-                        ? t('quitarVistos', idioma)
-                        : t('anadirVistos', idioma)),
-                  ),
-                ],
-              ),
+                ),
             ],
           ),
+          const SizedBox(height: 12),
+        ],
+        if (estreno.isNotEmpty) ...[
+          Text('${t('estreno', idioma)}: $estreno',
+              style: tema.textTheme.bodyMedium),
+          const SizedBox(height: 12),
+        ],
+        // Próximo episodio destacado (solo series)
+        if (esSerie && control.serie?.proximoEpisodio != null) ...[
+          _proximoEpisodio(control.serie!.proximoEpisodio!, idioma),
+          const SizedBox(height: 12),
+        ],
+        // Añadir/quitar de favoritos y de vistos (Wrap: en pantallas
+        // estrechas los dos botones pasan a dos líneas en vez de cortarse)
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          children: [
+            FilledButton.icon(
+              onPressed: () => _alternarFavorito(control, app),
+              icon: Icon(esFav ? Icons.favorite : Icons.favorite_border),
+              label: Text(esFav
+                  ? t('quitarFavoritos', idioma)
+                  : t('anadirFavoritos', idioma)),
+            ),
+            FilledButton.tonalIcon(
+              onPressed: () => _alternarVisto(control, app),
+              icon: Icon(
+                  esVisto ? Icons.visibility : Icons.visibility_outlined),
+              label: Text(esVisto
+                  ? t('quitarVistos', idioma)
+                  : t('anadirVistos', idioma)),
+            ),
+          ],
         ),
       ],
     );
+
+    // En pantallas estrechas (móvil vertical) la portada se pone arriba
+    // y el texto ocupa todo el ancho; en anchas (escritorio u horizontal)
+    // la portada sigue al lado. En pantallas bajas (horizontal de móvil)
+    // la portada se reduce para equilibrar la cabecera.
+    return LayoutBuilder(builder: (context, medidas) {
+      final estrecho = medidas.maxWidth < 600;
+      final alturaBaja = MediaQuery.of(context).size.height < 520;
+      final anchoPoster = estrecho
+          ? (medidas.maxWidth * 0.42).clamp(130.0, 180.0)
+          : (alturaBaja ? 150.0 : 200.0);
+
+      final posterWidget = ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          width: anchoPoster,
+          child: AspectRatio(
+            aspectRatio: 2 / 3,
+            child: poster == null
+                ? _marcador(context)
+                : Image.network(
+                    poster,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stack) =>
+                        _marcador(context),
+                  ),
+          ),
+        ),
+      );
+
+      if (estrecho) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(child: posterWidget),
+            const SizedBox(height: 16),
+            datos,
+          ],
+        );
+      }
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          posterWidget,
+          const SizedBox(width: 24),
+          Expanded(child: datos),
+        ],
+      );
+    });
   }
 
   void _alternarFavorito(DetalleController control, AppController app) {

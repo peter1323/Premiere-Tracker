@@ -40,9 +40,11 @@ class MangaDetalleView extends StatefulWidget {
     required MangaModel manga,
     required String language,
   }) {
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => MangaDetalleView(manga: manga, language: language),
-    ));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => MangaDetalleView(manga: manga, language: language),
+      ),
+    );
   }
 
   /// Abre la ficha de un manga guardado en favoritos o leídos, trayendo
@@ -52,9 +54,11 @@ class MangaDetalleView extends StatefulWidget {
     required int idManga,
     required String language,
   }) {
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => MangaDetalleView(idManga: idManga, language: language),
-    ));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => MangaDetalleView(idManga: idManga, language: language),
+      ),
+    );
   }
 
   @override
@@ -149,31 +153,183 @@ class _MangaDetalleViewState extends State<MangaDetalleView> {
     }
     final tama = MediaQuery.of(context).size.width;
     final doble = tama > 950;
+    // En pantallas estrechas (móvil vertical) la portada se pone arriba
+    // y el texto ocupa todo el ancho; en pantallas bajas (horizontal de
+    // móvil) la portada se reduce para equilibrar la cabecera.
+    final estrecho = tama < 620;
+    final alturaBaja = MediaQuery.of(context).size.height < 520;
+    final anchoPortada = estrecho
+        ? (tama * 0.40).clamp(140.0, 190.0)
+        : (alturaBaja ? 150.0 : 240.0);
 
     final portada = SizedBox(
-      width: 240,
+      width: anchoPortada,
       child: Card(
         clipBehavior: Clip.antiAlias,
         margin: EdgeInsets.zero,
-        child: m.portada.isEmpty
-            ? const SizedBox(
-                height: 340,
-                child: Icon(Icons.menu_book_rounded, size: 60),
-              )
-            : Image.network(
-                m.portada,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const SizedBox(
-                  height: 340,
-                  child: Icon(Icons.menu_book_rounded, size: 60),
+        child: AspectRatio(
+          aspectRatio: 2 / 3,
+          child: m.portada.isEmpty
+              ? const Icon(Icons.menu_book_rounded, size: 60)
+              : Image.network(
+                  m.portada,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) =>
+                      const Icon(Icons.menu_book_rounded, size: 60),
                 ),
-              ),
+        ),
       ),
+    );
+
+    // Datos de la derecha: título, datos, botones, sinopsis y enlaces.
+    final datos = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(m.titulo, style: Theme.of(context).textTheme.headlineSmall),
+        if (m.tituloEnglish != null && m.tituloEnglish != m.titulo) ...[
+          const SizedBox(height: 4),
+          Text(m.tituloEnglish!, style: Theme.of(context).textTheme.bodyMedium),
+        ],
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            ChipEstadoManga(estado: m.estado, idioma: strings),
+            if (m.puntuacion != null)
+              _Dato(
+                icono: Icons.star_rounded,
+                texto: '${m.puntuacion!.toStringAsFixed(1)} / 10',
+              ),
+            // En emisión AniList aún no tiene el total: se
+            // muestra '?' para que se vea que se desconoce
+            // en lugar de no aparecer nada.
+            if (m.capitulos != null || m.estado == 'emision')
+              _Dato(
+                icono: Icons.menu_book_rounded,
+                texto: '${t('capitulos', strings)}: ${m.capitulos ?? '?'}',
+              ),
+            if (m.tomos != null || m.estado == 'emision')
+              _Dato(
+                icono: Icons.library_books_rounded,
+                texto: '${t('tomos', strings)}: ${m.tomos ?? '?'}',
+              ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        // Guardar en Favoritos / Leídos (mismo sistema que
+        // las series y películas: se exportan igual).
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            FilledButton.tonalIcon(
+              onPressed: () => app.alternarFavoritoDeManga(m),
+              icon: Icon(
+                esFav ? Icons.favorite : Icons.favorite_border,
+                color: esFav ? Colors.red : null,
+              ),
+              label: Text(
+                esFav
+                    ? t('quitarFavoritos', strings)
+                    : t('anadirFavoritos', strings),
+              ),
+            ),
+            FilledButton.tonalIcon(
+              onPressed: () => app.alternarVistoDeManga(m),
+              icon: Icon(
+                esLeido ? Icons.visibility : Icons.visibility_outlined,
+              ),
+              label: Text(
+                esLeido
+                    ? t('quitarLeidos', strings)
+                    : t('anadirLeidos', strings),
+              ),
+            ),
+          ],
+        ),
+        if (m.formato.isNotEmpty || m.pais.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: [
+              if (m.formato.isNotEmpty)
+                _Etiqueta(texto: '${t('formato', strings)}: ${m.formato}'),
+              if (m.pais.isNotEmpty)
+                _Etiqueta(
+                  texto:
+                      '${t('pais', strings)}: ${traducirPais(m.pais, strings)}',
+                ),
+            ],
+          ),
+        ],
+        if (m.fechaInicio.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          _Dato(
+            icono: Icons.event_rounded,
+            texto: '${t('fechaInicio', strings)}: ${m.fechaInicio}',
+          ),
+        ],
+        if (m.autores.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _Seccion(titulo: t('autores', strings)),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: m.autores.map((a) => _Etiqueta(texto: a)).toList(),
+          ),
+        ],
+        if (m.generos.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _Seccion(titulo: t('generos', strings)),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: m.generos
+                .map((g) => _Etiqueta(texto: traducirGenero(g, strings)))
+                .toList(),
+          ),
+        ],
+        if (sinopsis.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _Seccion(titulo: t('sinopsis', strings)),
+          const SizedBox(height: 6),
+          Text(sinopsis),
+        ],
+        const SizedBox(height: 12),
+        _Seccion(titulo: t('ultimoCapitulo', strings)),
+        const SizedBox(height: 6),
+        _UltimoCapitulo(controlador: control),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            if (m.url.isNotEmpty)
+              FilledButton.icon(
+                onPressed: () => _abrirEnlace(m.url),
+                icon: const Icon(Icons.open_in_new_rounded),
+                label: Text(t('verEnAniList', strings)),
+              ),
+            FilledButton.tonalIcon(
+              onPressed: () => _abrirEnlace(
+                'https://mangadex.org/search?q=${Uri.encodeComponent(m.titulo)}',
+              ),
+              icon: const Icon(Icons.open_in_new_rounded),
+              label: Text(t('verEnMangaDex', strings)),
+            ),
+          ],
+        ),
+        if (!doble) const SizedBox(height: 12),
+      ],
     );
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(m.titulo),
+        title: Text(m.titulo, overflow: TextOverflow.ellipsis),
         backgroundColor: Colors.transparent,
       ),
       body: Center(
@@ -181,174 +337,23 @@ class _MangaDetalleViewState extends State<MangaDetalleView> {
           constraints: const BoxConstraints(maxWidth: 1000),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                portada,
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
+            child: estrecho
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Center(child: portada),
+                      const SizedBox(height: 16),
+                      datos,
+                    ],
+                  )
+                : Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        m.titulo,
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      if (m.tituloEnglish != null &&
-                          m.tituloEnglish != m.titulo) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          m.tituloEnglish!,
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          ChipEstadoManga(estado: m.estado, idioma: strings),
-                          if (m.puntuacion != null)
-                            _Dato(
-                              icono: Icons.star_rounded,
-                              texto:
-                                  '${m.puntuacion!.toStringAsFixed(1)} / 10',
-                            ),
-                          // En emisión AniList aún no tiene el total: se
-                          // muestra '?' para que se vea que se desconoce
-                          // en lugar de no aparecer nada.
-                          if (m.capitulos != null || m.estado == 'emision')
-                            _Dato(
-                              icono: Icons.menu_book_rounded,
-                              texto:
-                                  '${t('capitulos', strings)}: ${m.capitulos ?? '?'}',
-                            ),
-                          if (m.tomos != null || m.estado == 'emision')
-                            _Dato(
-                              icono: Icons.library_books_rounded,
-                              texto:
-                                  '${t('tomos', strings)}: ${m.tomos ?? '?'}',
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      // Guardar en Favoritos / Leídos (mismo sistema que
-                      // las series y películas: se exportan igual).
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          FilledButton.tonalIcon(
-                            onPressed: () => app.alternarFavoritoDeManga(m),
-                            icon: Icon(
-                              esFav
-                                  ? Icons.favorite
-                                  : Icons.favorite_border,
-                              color: esFav ? Colors.red : null,
-                            ),
-                            label: Text(esFav
-                                ? t('quitarFavoritos', strings)
-                                : t('anadirFavoritos', strings)),
-                          ),
-                          FilledButton.tonalIcon(
-                            onPressed: () => app.alternarVistoDeManga(m),
-                            icon: Icon(
-                              esLeido
-                                  ? Icons.visibility
-                                  : Icons.visibility_outlined,
-                            ),
-                            label: Text(esLeido
-                                ? t('quitarLeidos', strings)
-                                : t('anadirLeidos', strings)),
-                          ),
-                        ],
-                      ),
-                      if (m.formato.isNotEmpty || m.pais.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          children: [
-                            if (m.formato.isNotEmpty)
-                              _Etiqueta(
-                                  texto:
-                                      '${t('formato', strings)}: ${m.formato}'),
-                            if (m.pais.isNotEmpty)
-                              _Etiqueta(
-                                texto:
-                                    '${t('pais', strings)}: ${traducirPais(m.pais, strings)}',
-                              ),
-                          ],
-                        ),
-                      ],
-                      if (m.fechaInicio.isNotEmpty) ...[
-                        const SizedBox(height: 8),
-                        _Dato(
-                          icono: Icons.event_rounded,
-                          texto:
-                              '${t('fechaInicio', strings)}: ${m.fechaInicio}',
-                        ),
-                      ],
-                      if (m.autores.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        _Seccion(titulo: t('autores', strings)),
-                        const SizedBox(height: 6),
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
-                          children: m.autores
-                              .map((a) => _Etiqueta(texto: a))
-                              .toList(),
-                        ),
-                      ],
-                      if (m.generos.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        _Seccion(titulo: t('generos', strings)),
-                        const SizedBox(height: 6),
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
-                          children: m.generos
-                              .map((g) => _Etiqueta(
-                                  texto: traducirGenero(g, strings)))
-                              .toList(),
-                        ),
-                      ],
-                      if (sinopsis.isNotEmpty) ...[
-                        const SizedBox(height: 12),
-                        _Seccion(titulo: t('sinopsis', strings)),
-                        const SizedBox(height: 6),
-                        Text(sinopsis),
-                      ],
-                      const SizedBox(height: 12),
-                      _Seccion(titulo: t('ultimoCapitulo', strings)),
-                      const SizedBox(height: 6),
-                      _UltimoCapitulo(controlador: control),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          if (m.url.isNotEmpty)
-                            FilledButton.icon(
-                              onPressed: () => _abrirEnlace(m.url),
-                              icon: const Icon(Icons.open_in_new_rounded),
-                              label: Text(t('verEnAniList', strings)),
-                            ),
-                          FilledButton.tonalIcon(
-                            onPressed: () => _abrirEnlace(
-                                'https://mangadex.org/search?q=${Uri.encodeComponent(m.titulo)}'),
-                            icon: const Icon(Icons.open_in_new_rounded),
-                            label: Text(t('verEnMangaDex', strings)),
-                          ),
-                        ],
-                      ),
-                      if (!doble) const SizedBox(height: 12),
+                      portada,
+                      const SizedBox(width: 20),
+                      Expanded(child: datos),
                     ],
                   ),
-                ),
-              ],
-            ),
           ),
         ),
       ),
@@ -501,9 +506,7 @@ class _Seccion extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       titulo,
-      style: Theme.of(context)
-          .textTheme
-          .titleSmall
+      style: Theme.of(context).textTheme.titleSmall
           ?.copyWith(fontWeight: FontWeight.bold),
     );
   }
