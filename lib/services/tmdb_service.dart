@@ -1,18 +1,19 @@
 // SERVICIO de TMDB: la API de películas y series (la fuente principal de
-// la app). Es la ÚNICA que necesita API key, y esa clave se lee del
-// archivo .env con flutter_dotenv (nunca va escrita en el código). Sirve
-// para buscar y cargar series, películas, personas, reparto y episodios.
-// Cada petición lleva timeout; si la clave falta o está mal lanza
-// TmdbException con la marca claveIncorrecta. No dibuja nada.
+// la app). Es la ÚNICA que necesita API key, y esa clave la aporta
+// ClaveService (guardada en la app o leída del archivo .env; nunca va
+// escrita en el código). Sirve para buscar y cargar series, películas,
+// personas, reparto y episodios. Cada petición lleva timeout; si la
+// clave falta o está mal lanza TmdbException con la marca
+// claveIncorrecta. No dibuja nada.
 import 'dart:convert';
 
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/episodio_model.dart';
 import '../models/pelicula_model.dart';
 import '../models/persona_model.dart';
 import '../models/serie_model.dart';
+import 'clave_service.dart';
 
 /// Error propio de TMDB: clave mal/servicio no disponible.
 class TmdbException implements Exception {
@@ -28,12 +29,8 @@ class TmdbService {
   static const String _base = 'https://api.themoviedb.org/3';
   static const Duration _timeout = Duration(seconds: 10);
 
-  /// Clave leída del archivo .env (nunca escrita en el código).
-  static String get _apiKey => (dotenv.env['TMDB_API_KEY'] ?? '').trim();
-
   /// true si la clave no está o sigue con el texto de ejemplo del .env.
-  static bool get claveFaltante =>
-      _apiKey.isEmpty || _apiKey == 'TU_CLAVE_AQUI';
+  static bool get claveFaltante => !ClaveService.hayClave;
 
   /// Petición GET genérica con timeout de 10 segundos.
   static Future<Map<String, dynamic>> _get(
@@ -44,10 +41,12 @@ class TmdbService {
       throw TmdbException('Falta la API key de TMDB', claveIncorrecta: true);
     }
     final uri = Uri.parse('$_base$ruta').replace(
-      queryParameters: {'api_key': _apiKey, ...parametros},
+      queryParameters: {...ClaveService.parametrosAuth, ...parametros},
     );
     try {
-      final respuesta = await http.get(uri).timeout(_timeout);
+      final respuesta = await http
+          .get(uri, headers: ClaveService.cabeceras)
+          .timeout(_timeout);
       if (respuesta.statusCode == 401 || respuesta.statusCode == 403) {
         throw TmdbException('La API key de TMDB no es válida',
             claveIncorrecta: true);

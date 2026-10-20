@@ -1,8 +1,9 @@
 // Punto de entrada y raíz de la app Premiere Tracker.
 //
 // Este archivo hace tres cosas:
-//  1. Arranca la app y carga la API key de TMDB desde el archivo `.env`
-//     (si falta, la app funciona igualmente y solo se muestra un aviso).
+//  1. Arranca la app y carga la API key de TMDB: primero el archivo
+//     `.env` y después (si existe) la que el usuario guardó en la app;
+//     si falta, la app funciona igual y se puede configurar después.
 //  2. Crea los controladores globales (AppController y UsuariosController)
 //     con el paquete `provider` y monta el MaterialApp con el tema y el
 //     idioma del usuario.
@@ -22,6 +23,7 @@ import 'package:provider/provider.dart';
 import 'controllers/app_controller.dart';
 import 'controllers/usuarios_controller.dart';
 import 'l10n/app_strings.dart';
+import 'services/clave_service.dart';
 import 'views/ajustes_view.dart';
 import 'views/calendario_view.dart';
 import 'views/favoritos_view.dart';
@@ -41,13 +43,16 @@ final GlobalKey<NavigatorState> _claveNavegador = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Carga la API key de TMDB desde el archivo .env.
-  // Si falta el archivo, la app sigue funcionando y se mostrará un aviso.
+  // Carga el .env con la clave de TMDB. Si falta o está vacío, la app
+  // sigue funcionando: la clave se configurará en la pantalla de
+  // usuarios y se guardará en el dispositivo (SharedPreferences).
   try {
-    await dotenv.load(fileName: '.env');
+    await dotenv.load(fileName: '.env', isOptional: true);
   } catch (_) {
-    // Aviso mostrado en la búsqueda (Fase 2 en adelante)
+    // .env vacío o ilegible: ClaveService quedará sin clave de origen
   }
+  // Clave activa: gana la guardada en la app sobre la del .env
+  await ClaveService.cargar();
 
   runApp(const PremiereTrackerApp());
 }

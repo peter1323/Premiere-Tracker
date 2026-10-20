@@ -46,9 +46,14 @@ class AppController extends ChangeNotifier {
 
   /// Carga el tema global guardado al arrancar (pantalla de usuarios).
   Future<void> cargarTemaInicial() async {
-    final tema = await AlmacenamientoService.cargarTemaGlobal();
-    _temaGlobal = tema;
-    if (_usuarioActual == null) notifyListeners();
+    try {
+      final tema = await AlmacenamientoService.cargarTemaGlobal();
+      _temaGlobal = tema;
+      if (_usuarioActual == null) notifyListeners();
+    } catch (e) {
+      // Sin preferencias disponibles: se mantiene el tema claro por defecto
+      debugPrint('Error cargando tema global: $e');
+    }
   }
 
   /// Inicial del usuario para el círculo de la barra superior.

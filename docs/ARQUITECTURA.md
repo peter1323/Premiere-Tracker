@@ -44,7 +44,7 @@ lib/
 | Capa | Carpeta | Responsabilidad | Ejemplo |
 |------|---------|-----------------|---------|
 | **Modelo** | `models/` | Representar los datos. Solo campos y conversiones JSON↔objeto. | `SerieModel`, `MangaModel`, `FavoritoModel` |
-| **Servicio** | `services/` | Obtener datos: llamadas HTTP a APIs, leer/guardar en disco, caché, límites de peticiones. **Nunca dibuja.** | `TmdbService`, `AnilistService`, `AlmacenamientoService` |
+| **Servicio** | `services/` | Obtener datos: llamadas HTTP a APIs, leer/guardar en disco, caché, límites de peticiones. **Nunca dibuja.** | `TmdbService`, `ClaveService`, `AnilistService`, `AlmacenamientoService` |
 | **Controlador** | `controllers/` | La lógica de una pantalla: pedir datos al servicio, guardar el estado y avisar a la vista con `notifyListeners()`. **Nunca dibuja.** | `DetalleController`, `AppController` |
 | **Vista** | `views/` | Dibuja la interfaz y reacciona a los cambios del controlador. **Nunca hace llamadas de red.** | `DetalleView`, `FavoritosView` |
 
@@ -112,11 +112,12 @@ Antes de entrar a la app está la **pantalla de usuarios** (`usuarios_view` +
 ## 5. De dónde vienen los datos (las APIs)
 
 Cada tipo de contenido usa su fuente. **AniList y MangaDex son públicas y no
-necesitan clave; TMDB sí necesita una clave (guardada en `.env`); TVMaze no.**
+necesitan clave; TMDB sí necesita una clave (en `.env` o guardada en la app
+desde la pantalla de usuarios); TVMaze no.**
 
 | Fuente | Para qué | ¿Clave? |
 |--------|----------|---------|
-| **TMDB** (`tmdb_service`) | Series, películas, personas, reparto, episodios. Fuente principal. | Sí, en `.env` |
+| **TMDB** (`tmdb_service`) | Series, películas, personas, reparto, episodios. Fuente principal. | Sí, en `.env` o guardada en la app (`clave_service`) |
 | **TVMaze** (`tvmaze_service`) | Series alternativas (en inglés) y episodios. Tiene límite de peticiones. | No |
 | **AniList** (`anilist_service`) | Mangas, manhwas, manhuas y novelas (GraphQL). | No |
 | **MangaDex** (`mangadex_service`) | Último capítulo por idioma y sinopsis en español de los mangas. | No |

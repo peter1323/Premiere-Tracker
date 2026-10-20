@@ -39,6 +39,15 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    // Nombre del APK generado: Premiere-Tracker.apk (en vez de app-release.apk),
+    // para que al compartirlo por Telegram o USB lleve un nombre reconocible.
+    applicationVariants.all {
+        outputs.all {
+            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl)
+                .outputFileName = "Premiere-Tracker.apk"
+        }
+    }
 }
 
 kotlin {

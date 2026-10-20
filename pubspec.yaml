@@ -33,15 +33,23 @@ dev_dependencies:
   # Generación del icono de lanzamiento (mismo .ico que Windows)
   flutter_launcher_icons: ^0.14.4
 
+# Fijar la implementación Android de shared_preferences a 2.4.28: la 2.5.x
+# (publicada el 17-10-2026 con «Pigeon JNI») falla en Android real con
+# NoSuchMethodError al leer preferencias (spinner eterno en Usuarios y
+# usuarios que no se creaban). Se puede quitar cuando publique una corrección.
+dependency_overrides:
+  shared_preferences_android: 2.4.28
+
 flutter:
   uses-material-design: true
   assets:
     - .env
     - assets/images/
 
-# Icono de lanzamiento: usa el mismo .ico de la app de Windows para que
-# el móvil muestre idéntico icono. Solo Android de momento (ios: false).
+# Icono de lanzamiento: PNG de 256x256 extraído del .ico de Windows para
+# que el móvil muestre idéntico icono y sin pixelar (flutter_launcher_icons
+# decodifica la primera imagen del .ico, que es de 16x16). Solo Android.
 flutter_launcher_icons:
   android: true
   ios: false
-  image_path: "windows/runner/resources/app_icon.ico"
+  image_path: "tool/app_icon_256.png"

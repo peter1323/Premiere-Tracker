@@ -7,6 +7,7 @@
 // llama a AppController.establecerUsuario() para entrar a la app.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../controllers/app_controller.dart';
 import '../../controllers/usuarios_controller.dart';
@@ -22,6 +23,12 @@ class UsuariosView extends StatefulWidget {
 }
 
 class _UsuariosViewState extends State<UsuariosView> {
+  // Estado de la sección de clave TMDB
+  final TextEditingController _claveCtrl = TextEditingController();
+  bool _editandoClave = false;
+  bool _mostrarClave = false;
+  String? _errorClave;
+
   @override
   void initState() {
     super.initState();
@@ -30,6 +37,12 @@ class _UsuariosViewState extends State<UsuariosView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) context.read<UsuariosController>().cargarUsuarios();
     });
+  }
+
+  @override
+  void dispose() {
+    _claveCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -71,6 +84,28 @@ class _UsuariosViewState extends State<UsuariosView> {
                     padding: EdgeInsets.all(24),
                     child: Center(child: CircularProgressIndicator()),
                   )
+                else if (controlador.errorCarga != null) ...[
+                  // No se pudieron leer los datos locales: aviso y reintento
+                  // (en vez de quedarse en carga eterna)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Column(
+                      children: [
+                        Text(
+                          t(controlador.errorCarga!, idioma),
+                          textAlign: TextAlign.center,
+                          style:
+                              TextStyle(color: Theme.of(context).colorScheme.error),
+                        ),
+                        TextButton.icon(
+                          onPressed: controlador.cargarUsuarios,
+                          icon: const Icon(Icons.refresh),
+                          label: Text(t('reintentar', idioma)),
+                        ),
+                      ],
+                    ),
+                  ),
+                ]
                 else if (controlador.usuarios.isEmpty)
                   Text(
                     t('sinUsuarios', idioma),
@@ -85,6 +120,9 @@ class _UsuariosViewState extends State<UsuariosView> {
                   icon: const Icon(Icons.person_add_alt_1),
                   label: Text(t('crearUsuario', idioma)),
                 ),
+                const SizedBox(height: 24),
+                // Clave TMDB: se inserta y guarda en esta pantalla
+                _seccionClave(controlador, idioma),
               ],
             ),
           ),
@@ -154,6 +192,164 @@ class _UsuariosViewState extends State<UsuariosView> {
         SnackBar(content: Text(t('usuarioCreado', idioma))),
       );
     }
+  }
+
+  /// Sección de la clave TMDB: estado actual, campo para insertarla y
+  /// botones para modificarla o volver a la del .env. La clave se guarda
+  /// en el dispositivo y nunca se muestra completa.
+  Widget _seccionClave(UsuariosController control, String idioma) {
+    final esquema = Theme.of(context).colorScheme;
+    // Sin clave se muestra el campo directamente (modo edición)
+    final editando = _editandoClave || !control.hayClaveTmdb;
+    final origen = t(
+      control.claveTmdbEnApp ? 'claveGuardadaApp' : 'claveDelEntorno',
+      idioma,
+    );
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.vpn_key_outlined, color: esquema.primary),
+                const SizedBox(width: 8),
+                Text(t('claveTmdb', idioma),
+                    style: Theme.of(context).textTheme.titleMedium),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (!editando) ...[
+              // Clave activa: origen y cuatro últimos caracteres
+              Row(
+                children: [
+                  Icon(Icons.check_circle, size: 18, color: esquema.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '$origen · ${control.claveTmdbEnmascarada}',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 8,
+                children: [
+                  TextButton.icon(
+                    onPressed: () => setState(() {
+                      _editandoClave = true;
+                      _errorClave = null;
+                      _mostrarClave = false;
+                    }),
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    label: Text(t('modificarClave', idioma)),
+                  ),
+                  if (control.claveTmdbEnApp && control.hayClaveDelEntorno)
+                    TextButton.icon(
+                      onPressed: () {
+                        control.usarClaveDelEntorno();
+                        setState(() {
+                          _editandoClave = false;
+                          _errorClave = null;
+                          _claveCtrl.clear();
+                        });
+                      },
+                      icon: const Icon(Icons.restore, size: 18),
+                      label: Text(t('usarClaveEntorno', idioma)),
+                    ),
+                ],
+              ),
+            ] else ...[
+              TextField(
+                controller: _claveCtrl,
+                enabled: !control.comprobandoClave,
+                obscureText: !_mostrarClave,
+                autocorrect: false,
+                enableSuggestions: false,
+                onSubmitted: (_) => _guardarClave(control),
+                decoration: InputDecoration(
+                  labelText: t('claveInsertar', idioma),
+                  suffixIcon: IconButton(
+                    onPressed: () =>
+                        setState(() => _mostrarClave = !_mostrarClave),
+                    icon: Icon(_mostrarClave
+                        ? Icons.visibility_off
+                        : Icons.visibility),
+                  ),
+                ),
+              ),
+              if (control.comprobandoClave) ...[
+                const SizedBox(height: 8),
+                Text(t('claveComprobando', idioma),
+                    style: Theme.of(context).textTheme.bodySmall),
+              ],
+              if (_errorClave != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  t(_errorClave!, idioma),
+                  style: TextStyle(color: esquema.error, fontSize: 13),
+                ),
+              ],
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                children: [
+                  FilledButton.icon(
+                    onPressed: control.comprobandoClave
+                        ? null
+                        : () => _guardarClave(control),
+                    icon: const Icon(Icons.save_outlined),
+                    label: Text(t('guardar', idioma)),
+                  ),
+                  if (control.hayClaveTmdb)
+                    TextButton(
+                      onPressed: control.comprobandoClave
+                          ? null
+                          : () => setState(() {
+                              _editandoClave = false;
+                              _errorClave = null;
+                              _claveCtrl.clear();
+                            }),
+                      child: Text(t('cancelar', idioma)),
+                    ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 4),
+            TextButton.icon(
+              onPressed: _abrirPaginaClave,
+              icon: const Icon(Icons.open_in_new, size: 16),
+              label: Text(t('obtenerClave', idioma)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Comprueba la clave con TMDB y, si es válida, la guarda en la app.
+  Future<void> _guardarClave(UsuariosController control) async {
+    final error = await control.guardarClaveTmdb(_claveCtrl.text);
+    if (!mounted) return;
+    setState(() {
+      _errorClave = error;
+      if (error == null) {
+        _editandoClave = false;
+        _claveCtrl.clear();
+        _mostrarClave = false;
+      }
+    });
+  }
+
+  /// Abre la página de TMDB donde se solicita la API key.
+  Future<void> _abrirPaginaClave() async {
+    final uri = Uri.parse('https://www.themoviedb.org/settings/api');
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }
 
@@ -408,6 +604,7 @@ class _DialogoCrearState extends State<_DialogoCrear> {
 
   String? errorNombre;
   String? errorPin;
+  String? errorGeneral; // fallo del almacenamiento del dispositivo
 
   @override
   void initState() {
@@ -426,12 +623,16 @@ class _DialogoCrearState extends State<_DialogoCrear> {
   /// Valida con el controlador; si hay error lo muestra en el campo
   Future<void> intentar() async {
     final idioma = widget.idioma;
+    setState(() => errorGeneral = null);
     final errorClave = await context
         .read<UsuariosController>()
         .crearUsuario(textoNombre.text, textoPin.text);
     if (!mounted) return;
     if (errorClave == null) {
       Navigator.of(context).pop(true);
+    } else if (errorClave == 'errorAlmacenamiento') {
+      // Fallo del dispositivo: se avisa sin cerrar el diálogo
+      setState(() => errorGeneral = t(errorClave, idioma));
     } else {
       setState(() {
         if (errorClave == 'nombreRequerido') {
@@ -454,6 +655,14 @@ class _DialogoCrearState extends State<_DialogoCrear> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (errorGeneral != null) ...[
+              Text(
+                errorGeneral!,
+                style: TextStyle(
+                    color: Theme.of(context).colorScheme.error, fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+            ],
             TextField(
               controller: textoNombre,
               autofocus: true,

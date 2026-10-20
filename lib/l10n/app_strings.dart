@@ -25,6 +25,9 @@ const Map<String, Map<String, String>> cadenas = {
     'entrar': 'Entrar',
     'sinUsuarios': 'Aún no hay usuarios. Crea el primero.',
     'usuarioCreado': 'Usuario creado',
+    'errorAlmacenamiento':
+        'No se pueden leer o guardar los datos en este dispositivo',
+    'reintentar': 'Reintentar',
 
     // Menú lateral y barra superior
     'inicio': 'Inicio',
@@ -102,7 +105,7 @@ const Map<String, Map<String, String>> cadenas = {
     'avisoTvmaze': 'TVMaze no está disponible, mostrando datos de TMDB',
     'avisoTmdb': 'TMDB no está disponible, mostrando datos de TVMaze',
     'avisoTmdbKey':
-        'Falta la API key de TMDB o es incorrecta. Edita el archivo .env y reinicia la app.',
+        'Falta la API key de TMDB o es incorrecta. Ve a la pantalla de usuarios para configurarla.',
 
     // Calendario
     'calendario': 'Calendario',
@@ -189,6 +192,18 @@ const Map<String, Map<String, String>> cadenas = {
     'tmdbAviso':
         'This product uses the TMDB API but is not endorsed or certified by TMDB.',
     'tvmazeCredit': 'Datos de series proporcionados por TVMaze',
+
+    // Clave TMDB (se configura en la pantalla de usuarios)
+    'claveTmdb': 'Clave TMDB',
+    'claveInsertar': 'Inserte aquí su clave TMDB',
+    'claveGuardadaApp': 'Guardada en la app',
+    'claveDelEntorno': 'Del archivo .env',
+    'claveComprobando': 'Comprobando la clave…',
+    'claveNoValida': 'La clave no es válida, revísala',
+    'claveVacia': 'Escribe una clave',
+    'modificarClave': 'Modificar clave',
+    'usarClaveEntorno': 'Usar la del .env',
+    'obtenerClave': 'Obtener clave',
   },
   'en': {
     // General
@@ -214,6 +229,9 @@ const Map<String, Map<String, String>> cadenas = {
     'entrar': 'Enter',
     'sinUsuarios': 'No users yet. Create the first one.',
     'usuarioCreado': 'User created',
+    'errorAlmacenamiento':
+        'Data cannot be read or saved on this device',
+    'reintentar': 'Try again',
 
     // Side menu and top bar
     'inicio': 'Home',
@@ -291,7 +309,7 @@ const Map<String, Map<String, String>> cadenas = {
     'avisoTvmaze': 'TVMaze is unavailable, showing TMDB data',
     'avisoTmdb': 'TMDB is unavailable, showing TVMaze data',
     'avisoTmdbKey':
-        'The TMDB API key is missing or incorrect. Edit the .env file and restart the app.',
+        'The TMDB API key is missing or incorrect. Set it up on the users screen.',
 
     // Calendar
     'calendario': 'Calendar',
@@ -378,6 +396,18 @@ const Map<String, Map<String, String>> cadenas = {
     'tmdbAviso':
         'This product uses the TMDB API but is not endorsed or certified by TMDB.',
     'tvmazeCredit': 'Series data provided by TVMaze',
+
+    // TMDB API key (set up on the users screen)
+    'claveTmdb': 'TMDB API key',
+    'claveInsertar': 'Insert your TMDB API key here',
+    'claveGuardadaApp': 'Saved in the app',
+    'claveDelEntorno': 'From the .env file',
+    'claveComprobando': 'Verifying the key…',
+    'claveNoValida': 'The key is not valid, check it',
+    'claveVacia': 'Enter a key',
+    'modificarClave': 'Change key',
+    'usarClaveEntorno': 'Use the .env one',
+    'obtenerClave': 'Get key',
   },
 };
 
