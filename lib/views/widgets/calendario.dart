@@ -51,10 +51,16 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
     with SingleTickerProviderStateMixin {
   // Los paquetes no limitan el rango: aquí se acota a 2 años atrás y 6
   // adelante (los datos se cargan por periodo visible, sin precargar).
-  static final DateTime _limiteInferior =
-      DateTime(DateTime.now().year - 2, 1, 1);
-  static final DateTime _limiteSuperior =
-      DateTime(DateTime.now().year + 6, 12, 31);
+  static final DateTime _limiteInferior = DateTime(
+    DateTime.now().year - 2,
+    1,
+    1,
+  );
+  static final DateTime _limiteSuperior = DateTime(
+    DateTime.now().year + 6,
+    12,
+    31,
+  );
 
   static const List<String> _diasCortos = [
     'lunesCorto',
@@ -107,7 +113,8 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
 
     // Los eventos se regeneran solo si cambian los datos, la pestaña
     // o el tema (los colores dependen del esquema).
-    final firma = '${widget.pestana}|${widget.seriesPorDia.hashCode}|'
+    final firma =
+        '${widget.pestana}|${widget.seriesPorDia.hashCode}|'
         '${widget.peliculasPorDia.hashCode}|${esquema.brightness}';
     if (_firmaEventos != firma) {
       _firmaEventos = firma;
@@ -120,121 +127,153 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
         : widget.peliculasPorDia;
     final hayEntradas = entradas.values.any((lista) => lista.isNotEmpty);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Título + selector Día | Semana | Mes + botón Hoy
-        Row(
-          children: [
-            Text(t('calendario', widget.idioma), style: tema.textTheme.titleMedium),
-            const Spacer(),
-            SegmentedButton<String>(
-              segments: [
-                ButtonSegment(
-                  value: 'dia',
-                  icon: const Icon(Icons.view_day_outlined),
-                  label: Text(t('dia', widget.idioma)),
-                ),
-                ButtonSegment(
-                  value: 'semana',
-                  icon: const Icon(Icons.view_week_outlined),
-                  label: Text(t('semana', widget.idioma)),
-                ),
-                ButtonSegment(
-                  value: 'mes',
-                  icon: const Icon(Icons.calendar_month_outlined),
-                  label: Text(t('mes', widget.idioma)),
-                ),
-                ButtonSegment(
-                  value: 'anio',
-                  icon: const Icon(Icons.grid_view_outlined),
-                  label: Text(t('anio', widget.idioma)),
-                ),
-              ],
-              selected: {widget.modo},
-              onSelectionChanged: (seleccion) => widget.onModo(seleccion.first),
-            ),
-            const SizedBox(width: 8),
-            // Fondo morado (primario) para que destaque y se encuentre
-            // rápido, igual que la cabecera de las vistas del calendario.
-            FilledButton.icon(
-              onPressed: _irAHoy,
-              icon: const Icon(Icons.today),
-              label: Text(t('hoy', widget.idioma)),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-
-        // Pestañas Series | Películas
-        TabBar(
-          controller: _pestanas,
-          tabs: [
-            Tab(text: t('series', widget.idioma)),
-            Tab(text: t('peliculas', widget.idioma)),
-          ],
-        ),
-
-        // Aviso si TVMaze no estuvo disponible
-        if (widget.aviso != null) ...[
-          const SizedBox(height: 6),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: esquema.tertiaryContainer,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.cloud_off, size: 16, color: esquema.onTertiaryContainer),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    t(widget.aviso!, widget.idioma),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: esquema.onTertiaryContainer,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+    // Cabecera compartida: título + modos, pestañas y aviso opcional.
+    final cabecera = <Widget>[
+      // Título + selector Día | Semana | Mes + botón Hoy
+      Row(
+        children: [
+          Text(
+            t('calendario', widget.idioma),
+            style: tema.textTheme.titleMedium,
+          ),
+          const Spacer(),
+          SegmentedButton<String>(
+            segments: [
+              ButtonSegment(
+                value: 'dia',
+                icon: const Icon(Icons.view_day_outlined),
+                label: Text(t('dia', widget.idioma)),
+              ),
+              ButtonSegment(
+                value: 'semana',
+                icon: const Icon(Icons.view_week_outlined),
+                label: Text(t('semana', widget.idioma)),
+              ),
+              ButtonSegment(
+                value: 'mes',
+                icon: const Icon(Icons.calendar_month_outlined),
+                label: Text(t('mes', widget.idioma)),
+              ),
+              ButtonSegment(
+                value: 'anio',
+                icon: const Icon(Icons.grid_view_outlined),
+                label: Text(t('anio', widget.idioma)),
+              ),
+            ],
+            selected: {widget.modo},
+            onSelectionChanged: (seleccion) => widget.onModo(seleccion.first),
+          ),
+          const SizedBox(width: 8),
+          // Fondo morado (primario) para que destaque y se encuentre
+          // rápido, igual que la cabecera de las vistas del calendario.
+          FilledButton.icon(
+            onPressed: _irAHoy,
+            icon: const Icon(Icons.today),
+            label: Text(t('hoy', widget.idioma)),
           ),
         ],
-        const SizedBox(height: 6),
+      ),
+      const SizedBox(height: 4),
 
-        // Vista del calendario (día, semana o mes)
-        Expanded(
-          child: Stack(
+      // Pestañas Series | Películas
+      TabBar(
+        controller: _pestanas,
+        tabs: [
+          Tab(text: t('series', widget.idioma)),
+          Tab(text: t('peliculas', widget.idioma)),
+        ],
+      ),
+
+      // Aviso si TVMaze no estuvo disponible
+      if (widget.aviso != null) ...[
+        const SizedBox(height: 6),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: esquema.tertiaryContainer,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
             children: [
-              _vista(),
-              if (widget.cargando)
-                const Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: LinearProgressIndicator(minHeight: 3),
-                ),
-              if (!widget.cargando && !hayEntradas && widget.modo != 'anio')
-                IgnorePointer(
-                  child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: esquema.surfaceContainerHighest
-                            .withValues(alpha: 0.92),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(t('noHayEstrenos', widget.idioma)),
-                    ),
+              Icon(
+                Icons.cloud_off,
+                size: 16,
+                color: esquema.onTertiaryContainer,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  t(widget.aviso!, widget.idioma),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: esquema.onTertiaryContainer,
                   ),
                 ),
+              ),
             ],
           ),
         ),
       ],
+      const SizedBox(height: 6),
+    ];
+
+    // Vista del calendario (día, semana o mes)
+    final contenido = Stack(
+      children: [
+        _vista(),
+        if (widget.cargando)
+          const Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: LinearProgressIndicator(minHeight: 3),
+          ),
+        if (!widget.cargando && !hayEntradas && widget.modo != 'anio')
+          IgnorePointer(
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: esquema.surfaceContainerHighest.withValues(
+                    alpha: 0.92,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(t('noHayEstrenos', widget.idioma)),
+              ),
+            ),
+          ),
+      ],
+    );
+
+    // En alturas bajas (móvil horizontal) la página entera se desplaza y
+    // la vista del calendario queda con una altura mínima para seguir
+    // utilizable; en alturas normales ocupa el resto (igual que siempre).
+    return LayoutBuilder(
+      builder: (context, medidas) {
+        if (medidas.maxHeight < 360) {
+          return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ...cabecera,
+                SizedBox(height: 340, child: contenido),
+              ],
+            ),
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ...cabecera,
+            Expanded(child: contenido),
+          ],
+        );
+      },
     );
   }
 
@@ -244,24 +283,26 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
       case 'dia':
         // LayoutBuilder: la densidad se calcula para que las 24 horas
         // llenen el alto disponible (sin scroll ni saltos al cambiar).
-        return LayoutBuilder(builder: (context, caja) {
-          return DayView<EntradaCalendario>(
-            key: _claveDia,
-            controller: _eventos,
-            initialDay: widget.fechaVisible,
-            minDay: _limiteInferior,
-            maxDay: _limiteSuperior,
-            heightPerMinute: _densidad(caja.maxHeight),
-            onPageChange: (fecha, pagina) => widget.onFecha(fecha),
-            onEventTap: _abrirEventos,
-            eventTileBuilder: _tileHora,
-            dateStringBuilder: _tituloDia,
-            // La navegación ya es con las flechas y el botón "Hoy":
-            // sin esto, al pinchar el título se abría el showDatePicker
-            // del paquete (pantalla gris que tapaba el calendario).
-            onHeaderTitleTap: (_) async {},
-          );
-        });
+        return LayoutBuilder(
+          builder: (context, caja) {
+            return DayView<EntradaCalendario>(
+              key: _claveDia,
+              controller: _eventos,
+              initialDay: widget.fechaVisible,
+              minDay: _limiteInferior,
+              maxDay: _limiteSuperior,
+              heightPerMinute: _densidad(caja.maxHeight),
+              onPageChange: (fecha, pagina) => widget.onFecha(fecha),
+              onEventTap: _abrirEventos,
+              eventTileBuilder: _tileHora,
+              dateStringBuilder: _tituloDia,
+              // La navegación ya es con las flechas y el botón "Hoy":
+              // sin esto, al pinchar el título se abría el showDatePicker
+              // del paquete (pantalla gris que tapaba el calendario).
+              onHeaderTitleTap: (_) async {},
+            );
+          },
+        );
       case 'mes':
         // Vista de mes propia: el MonthView del paquete dimensionaba las
         // celdas con el ancho de la ventana (no el del calendario), salía
@@ -273,25 +314,27 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
         return _vistaAnio();
       case 'semana':
       default:
-        return LayoutBuilder(builder: (context, caja) {
-          return WeekView<EntradaCalendario>(
-            key: _claveSemana,
-            controller: _eventos,
-            initialDay: widget.fechaVisible,
-            minDay: _limiteInferior,
-            maxDay: _limiteSuperior,
-            heightPerMinute: _densidad(caja.maxHeight),
-            onPageChange: (fecha, pagina) => widget.onFecha(fecha),
-            onEventTap: _abrirEventos,
-            eventTileBuilder: _tileHora,
-            headerStringBuilder: _tituloSemana,
-            // Sin columna de número de semana (ocupaba una columna entera)
-            weekNumberBuilder: (_) => const SizedBox.shrink(),
-            // Igual que en Día: el clic en el título no abre el
-            // showDatePicker del paquete; se navega con las flechas.
-            onHeaderTitleTap: (_) async {},
-          );
-        });
+        return LayoutBuilder(
+          builder: (context, caja) {
+            return WeekView<EntradaCalendario>(
+              key: _claveSemana,
+              controller: _eventos,
+              initialDay: widget.fechaVisible,
+              minDay: _limiteInferior,
+              maxDay: _limiteSuperior,
+              heightPerMinute: _densidad(caja.maxHeight),
+              onPageChange: (fecha, pagina) => widget.onFecha(fecha),
+              onEventTap: _abrirEventos,
+              eventTileBuilder: _tileHora,
+              headerStringBuilder: _tituloSemana,
+              // Sin columna de número de semana (ocupaba una columna entera)
+              weekNumberBuilder: (_) => const SizedBox.shrink(),
+              // Igual que en Día: el clic en el título no abre el
+              // showDatePicker del paquete; se navega con las flechas.
+              onHeaderTitleTap: (_) async {},
+            );
+          },
+        );
     }
   }
 
@@ -305,9 +348,11 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
   /// Convierte los datos del controlador en eventos del paquete.
   /// Las entradas sin hora ("HH:mm") se muestran como día completo.
   List<CalendarEventData<EntradaCalendario>> _crearEventos(
-      ColorScheme esquema) {
-    final color =
-        widget.pestana == 'series' ? esquema.primary : esquema.tertiary;
+    ColorScheme esquema,
+  ) {
+    final color = widget.pestana == 'series'
+        ? esquema.primary
+        : esquema.tertiary;
     final porDia = widget.pestana == 'series'
         ? widget.seriesPorDia
         : widget.peliculasPorDia;
@@ -325,21 +370,27 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
       final fin = inicio == null
           ? null
           : (inicio.hour == 23
-              ? DateTime(fecha.year, fecha.month, fecha.day, 23, 59)
-              : DateTime(
-                  inicio.year, inicio.month, inicio.day, inicio.hour + 1));
+                ? DateTime(fecha.year, fecha.month, fecha.day, 23, 59)
+                : DateTime(
+                    inicio.year,
+                    inicio.month,
+                    inicio.day,
+                    inicio.hour + 1,
+                  ));
       final titulo = entrada.etiqueta.isNotEmpty
           ? '${entrada.etiqueta} · ${entrada.titulo}'
           : entrada.titulo;
 
-      eventos.add(CalendarEventData<EntradaCalendario>(
-        title: titulo,
-        date: fecha,
-        event: entrada,
-        color: color,
-        startTime: inicio,
-        endTime: fin,
-      ));
+      eventos.add(
+        CalendarEventData<EntradaCalendario>(
+          title: titulo,
+          date: fecha,
+          event: entrada,
+          color: color,
+          startTime: inicio,
+          endTime: fin,
+        ),
+      );
     }
     return eventos;
   }
@@ -360,8 +411,9 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
   Widget _vistaMes() {
     final esquema = Theme.of(context).colorScheme;
     final fecha = widget.fechaVisible;
-    final colorEvento =
-        widget.pestana == 'series' ? esquema.primary : esquema.tertiary;
+    final colorEvento = widget.pestana == 'series'
+        ? esquema.primary
+        : esquema.tertiary;
     final hoy = DateTime.now();
 
     // Entradas del mes actual indexadas por "yyyy-MM-dd"
@@ -371,8 +423,9 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
         : widget.peliculasPorDia;
     for (final lista in origenes.values) {
       for (final entrada in lista) {
-        (porDia[_claveDe(DateTime.parse(entrada.claveDia))] ??= [])
-            .add(entrada);
+        (porDia[_claveDe(DateTime.parse(entrada.claveDia))] ??= []).add(
+          entrada,
+        );
       }
     }
 
@@ -396,7 +449,9 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
                 onTap: _abrirSelectorMes,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 4),
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   child: Row(
                     children: [
                       Text(
@@ -445,53 +500,69 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
         ),
         // Cuadrícula: 35 o 42 casillas que ocupan el alto restante exacto
         Expanded(
-          child: LayoutBuilder(builder: (context, caja) {
-            final primero = _lunesDe(fecha);
-            final ultimoDelMes = DateTime(fecha.year, fecha.month + 1, 0);
-            // Suma de días con el constructor (no Duration): al cruzar el
-            // cambio de hora, Duration adelantaba las celdas una hora y
-            // algún día se repetía (p. ej. el domingo 25 de octubre).
-            final fin = DateTime(ultimoDelMes.year, ultimoDelMes.month,
-                ultimoDelMes.day + (7 - ultimoDelMes.weekday));
-            // Diferencia en días de calendario (UTC evita el cambio de hora)
-            final totalDias = DateTime.utc(fin.year, fin.month, fin.day)
-                    .difference(
-                        DateTime.utc(primero.year, primero.month, primero.day))
-                    .inDays +
-                1;
-            final filas = totalDias ~/ 7;
-            final altoCelda = caja.maxHeight / filas;
-            final anchoCelda = caja.maxWidth / 7;
+          child: LayoutBuilder(
+            builder: (context, caja) {
+              final primero = _lunesDe(fecha);
+              final ultimoDelMes = DateTime(fecha.year, fecha.month + 1, 0);
+              // Suma de días con el constructor (no Duration): al cruzar el
+              // cambio de hora, Duration adelantaba las celdas una hora y
+              // algún día se repetía (p. ej. el domingo 25 de octubre).
+              final fin = DateTime(
+                ultimoDelMes.year,
+                ultimoDelMes.month,
+                ultimoDelMes.day + (7 - ultimoDelMes.weekday),
+              );
+              // Diferencia en días de calendario (UTC evita el cambio de hora)
+              final totalDias =
+                  DateTime.utc(fin.year, fin.month, fin.day)
+                      .difference(
+                        DateTime.utc(primero.year, primero.month, primero.day),
+                      )
+                      .inDays +
+                  1;
+              final filas = totalDias ~/ 7;
+              final altoCelda = caja.maxHeight / filas;
+              final anchoCelda = caja.maxWidth / 7;
 
-            return GridView.builder(
-              physics: const NeverScrollableScrollPhysics(),
-              padding: EdgeInsets.zero,
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 7,
-                childAspectRatio: anchoCelda / altoCelda,
-              ),
-              itemCount: totalDias,
-              itemBuilder: (context, indice) {
-                // Día de calendario (Duration cruzaría el cambio de hora)
-                final dia = DateTime(
-                    primero.year, primero.month, primero.day + indice);
-                final enElMes = dia.month == fecha.month;
-                final esHoy = dia.year == hoy.year &&
-                    dia.month == hoy.month &&
-                    dia.day == hoy.day;
-                final lista = porDia[_claveDe(dia)] ?? const [];
-                return GestureDetector(
-                  onTap: () {
-                    // Un toque en el día abre la vista de día
-                    widget.onModo('dia');
-                    widget.onFecha(dia);
-                  },
-                  child: _contenidoCeldaMes(
-                      dia, lista, esHoy, enElMes, colorEvento),
-                );
-              },
-            );
-          }),
+              return GridView.builder(
+                physics: const NeverScrollableScrollPhysics(),
+                padding: EdgeInsets.zero,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 7,
+                  childAspectRatio: anchoCelda / altoCelda,
+                ),
+                itemCount: totalDias,
+                itemBuilder: (context, indice) {
+                  // Día de calendario (Duration cruzaría el cambio de hora)
+                  final dia = DateTime(
+                    primero.year,
+                    primero.month,
+                    primero.day + indice,
+                  );
+                  final enElMes = dia.month == fecha.month;
+                  final esHoy =
+                      dia.year == hoy.year &&
+                      dia.month == hoy.month &&
+                      dia.day == hoy.day;
+                  final lista = porDia[_claveDe(dia)] ?? const [];
+                  return GestureDetector(
+                    onTap: () {
+                      // Un toque en el día abre la vista de día
+                      widget.onModo('dia');
+                      widget.onFecha(dia);
+                    },
+                    child: _contenidoCeldaMes(
+                      dia,
+                      lista,
+                      esHoy,
+                      enElMes,
+                      colorEvento,
+                    ),
+                  );
+                },
+              );
+            },
+          ),
         ),
       ],
     );
@@ -545,25 +616,27 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
         ),
         // Cuadrícula con los 12 meses del año
         Expanded(
-          child: LayoutBuilder(builder: (context, caja) {
-            final columnas = (caja.maxWidth / 220).floor().clamp(3, 6);
-            return GridView.builder(
-              padding: const EdgeInsets.all(12),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: columnas,
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
-                childAspectRatio: 2.8,
-              ),
-              itemCount: 12,
-              itemBuilder: (context, indice) {
-                final mes = indice + 1;
-                final esMesActual = anio == hoy.year && mes == hoy.month;
-                final total = _estrenosDelMes(entradas, anio, mes);
-                return _tarjetaMesAnio(mes, total, esMesActual, esquema);
-              },
-            );
-          }),
+          child: LayoutBuilder(
+            builder: (context, caja) {
+              final columnas = (caja.maxWidth / 220).floor().clamp(3, 6);
+              return GridView.builder(
+                padding: const EdgeInsets.all(12),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: columnas,
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  childAspectRatio: 2.8,
+                ),
+                itemCount: 12,
+                itemBuilder: (context, indice) {
+                  final mes = indice + 1;
+                  final esMesActual = anio == hoy.year && mes == hoy.month;
+                  final total = _estrenosDelMes(entradas, anio, mes);
+                  return _tarjetaMesAnio(mes, total, esMesActual, esquema);
+                },
+              );
+            },
+          ),
         ),
       ],
     );
@@ -571,7 +644,10 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
 
   /// Número de estrenos de un mes sumando los días "yyyy-MM-dd".
   int _estrenosDelMes(
-      Map<String, List<EntradaCalendario>> entradas, int anio, int mes) {
+    Map<String, List<EntradaCalendario>> entradas,
+    int anio,
+    int mes,
+  ) {
     final prefijo = '$anio-${mes.toString().padLeft(2, '0')}';
     var total = 0;
     for (final dia in entradas.entries) {
@@ -584,7 +660,11 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
   /// (o "Sin estrenos") y borde si es el mes actual; al pulsarla se
   /// entra en la vista de mes de ese mes.
   Widget _tarjetaMesAnio(
-      int mes, int total, bool esMesActual, ColorScheme esquema) {
+    int mes,
+    int total,
+    bool esMesActual,
+    ColorScheme esquema,
+  ) {
     final anio = widget.fechaVisible.year;
     return Material(
       color: esquema.surfaceContainerHigh,
@@ -621,7 +701,7 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
                 total == 0
                     ? t('sinEstrenos', widget.idioma)
                     : '$total '
-                        '${t(total == 1 ? 'cantEstreno' : 'cantEstrenos', widget.idioma)}',
+                          '${t(total == 1 ? 'cantEstreno' : 'cantEstrenos', widget.idioma)}',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
@@ -672,8 +752,7 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
             ),
           ),
           const SizedBox(height: 2),
-          for (final entrada in lista.take(3))
-            _chipDe(entrada, colorEvento),
+          for (final entrada in lista.take(3)) _chipDe(entrada, colorEvento),
           if (lista.length > 3)
             Padding(
               padding: const EdgeInsets.only(left: 3),
@@ -716,14 +795,16 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
   }
 
   /// true si el mes visible no es el primero del rango (flecha ‹ activa).
-  bool get _mesEnMin => DateTime(widget.fechaVisible.year,
-          widget.fechaVisible.month)
-      .isAfter(DateTime(_limiteInferior.year, _limiteInferior.month));
+  bool get _mesEnMin => DateTime(
+    widget.fechaVisible.year,
+    widget.fechaVisible.month,
+  ).isAfter(DateTime(_limiteInferior.year, _limiteInferior.month));
 
   /// true si el mes visible no es el último del rango (flecha › activa).
-  bool get _mesEnMax => DateTime(widget.fechaVisible.year,
-          widget.fechaVisible.month)
-      .isBefore(DateTime(_limiteSuperior.year, _limiteSuperior.month));
+  bool get _mesEnMax => DateTime(
+    widget.fechaVisible.year,
+    widget.fechaVisible.month,
+  ).isBefore(DateTime(_limiteSuperior.year, _limiteSuperior.month));
 
   /// Cambia de mes respecto al visible (+1 adelante, -1 atrás),
   /// sin salirse del rango permitido del calendario.
@@ -756,7 +837,10 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
   DateTime _lunesDe(DateTime fecha) {
     final primero = DateTime(fecha.year, fecha.month, 1);
     return DateTime(
-        primero.year, primero.month, primero.day - (primero.weekday - 1));
+      primero.year,
+      primero.month,
+      primero.day - (primero.weekday - 1),
+    );
   }
 
   /// Clave "yyyy-MM-dd" para indexar las entradas por día.
@@ -827,7 +911,9 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
   /// Toque sobre los eventos de una hora: si hay uno solo se abre;
   /// si hay varios, se elige en una lista.
   void _abrirEventos(
-      List<CalendarEventData<EntradaCalendario>> eventos, DateTime fecha) {
+    List<CalendarEventData<EntradaCalendario>> eventos,
+    DateTime fecha,
+  ) {
     if (eventos.isEmpty) return;
     final primero = eventos.first.event;
     if (eventos.length == 1) {
@@ -842,9 +928,9 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
           children: [
             for (final evento in eventos)
               ListTile(
-                leading: Icon(evento.event?.tipo == 'pelicula'
-                    ? Icons.movie
-                    : Icons.tv),
+                leading: Icon(
+                  evento.event?.tipo == 'pelicula' ? Icons.movie : Icons.tv,
+                ),
                 title: Text(evento.title),
                 subtitle: evento.event?.hora.isNotEmpty == true
                     ? Text(evento.event!.hora)
@@ -932,18 +1018,21 @@ class _SelectorMesState extends State<_SelectorMes> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  onPressed:
-                      _anio > widget.anioMin ? () => _cambiarAnio(-1) : null,
+                  onPressed: _anio > widget.anioMin
+                      ? () => _cambiarAnio(-1)
+                      : null,
                   icon: const Icon(Icons.chevron_left),
                 ),
                 Text(
                   '$_anio',
-                  style: tema.textTheme.titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w600),
+                  style: tema.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 IconButton(
-                  onPressed:
-                      _anio < widget.anioMax ? () => _cambiarAnio(1) : null,
+                  onPressed: _anio < widget.anioMax
+                      ? () => _cambiarAnio(1)
+                      : null,
                   icon: const Icon(Icons.chevron_right),
                 ),
               ],
@@ -957,9 +1046,7 @@ class _SelectorMesState extends State<_SelectorMes> {
               mainAxisSpacing: 8,
               crossAxisSpacing: 8,
               childAspectRatio: 2.2,
-              children: [
-                for (var mes = 1; mes <= 12; mes++) _botonMes(mes),
-              ],
+              children: [for (var mes = 1; mes <= 12; mes++) _botonMes(mes)],
             ),
           ],
         ),
@@ -972,8 +1059,8 @@ class _SelectorMesState extends State<_SelectorMes> {
   Widget _botonMes(int mes) {
     final esquema = Theme.of(context).colorScheme;
     final hoy = DateTime.now();
-    final seleccionado = _anio == widget.fechaInicial.year &&
-        mes == widget.fechaInicial.month;
+    final seleccionado =
+        _anio == widget.fechaInicial.year && mes == widget.fechaInicial.month;
     final esMesActual = _anio == hoy.year && mes == hoy.month;
 
     return Material(
@@ -990,8 +1077,9 @@ class _SelectorMesState extends State<_SelectorMes> {
             nombreMes(mes, widget.idioma),
             style: TextStyle(
               fontSize: 13,
-              fontWeight:
-                  seleccionado || esMesActual ? FontWeight.w700 : FontWeight.w500,
+              fontWeight: seleccionado || esMesActual
+                  ? FontWeight.w700
+                  : FontWeight.w500,
               color: seleccionado ? esquema.onPrimary : esquema.onSurface,
             ),
           ),

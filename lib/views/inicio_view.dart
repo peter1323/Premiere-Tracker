@@ -71,48 +71,72 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
 
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Fila del buscador
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: widget.controladorTexto,
-                  onSubmitted: (_) => _buscar(control, idioma),
-                  decoration: InputDecoration(
-                    hintText: t('buscarHint', idioma),
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: IconButton(
-                      tooltip: t('cerrar', idioma),
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        widget.controladorTexto.clear();
-                        control.limpiarBusqueda();
-                      },
+      child: LayoutBuilder(
+        builder: (context, medidas) {
+          // En alturas bajas (móvil horizontal) la página entera se
+          // desplaza y los resultados ocupan una altura fija, para que
+          // no queden comprimidos a píxeles; en alturas normales
+          // (escritorio y vertical) el comportamiento es el de siempre.
+          final fijo = <Widget>[
+            // Fila del buscador
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: widget.controladorTexto,
+                    onSubmitted: (_) => _buscar(control, idioma),
+                    decoration: InputDecoration(
+                      hintText: t('buscarHint', idioma),
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: IconButton(
+                        tooltip: t('cerrar', idioma),
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          widget.controladorTexto.clear();
+                          control.limpiarBusqueda();
+                        },
+                      ),
                     ),
                   ),
                 ),
+                const SizedBox(width: 12),
+                FilledButton.icon(
+                  onPressed: control.buscando
+                      ? null
+                      : () => _buscar(control, idioma),
+                  icon: const Icon(Icons.search),
+                  label: Text(t('buscar', idioma)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Avisos: APIs caídas, sin conexión o API key
+            if (control.avisos.isNotEmpty)
+              ...control.avisos.map((aviso) => _Aviso(texto: t(aviso, idioma))),
+          ];
+
+          if (medidas.maxHeight < 360) {
+            return SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ...fijo,
+                  SizedBox(height: 360, child: _contenido(control, idioma)),
+                ],
               ),
-              const SizedBox(width: 12),
-              FilledButton.icon(
-                onPressed:
-                    control.buscando ? null : () => _buscar(control, idioma),
-                icon: const Icon(Icons.search),
-                label: Text(t('buscar', idioma)),
-              ),
+            );
+          }
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ...fijo,
+              // Contenido: resultados con pestañas, o estado vacío
+              Expanded(child: _contenido(control, idioma)),
             ],
-          ),
-          const SizedBox(height: 12),
-
-          // Avisos: APIs caídas, sin conexión o API key
-          if (control.avisos.isNotEmpty)
-            ...control.avisos.map((aviso) => _Aviso(texto: t(aviso, idioma))),
-
-          // Contenido: resultados con pestañas, o estado vacío
-          Expanded(child: _contenido(control, idioma)),
-        ],
+          );
+        },
       ),
     );
   }
@@ -128,10 +152,7 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
     }
     if (!control.hayConsulta) {
       // Sin búsqueda todavía: se invita a usar el buscador
-      return _EstadoVacio(
-        icono: Icons.search,
-        texto: t('inicioVacio', idioma),
-      );
+      return _EstadoVacio(icono: Icons.search, texto: t('inicioVacio', idioma));
     }
     if (!control.hayResultados) {
       return _EstadoVacio(
@@ -177,8 +198,10 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
         // Selector TMDB | TVMaze
         Row(
           children: [
-            Text(t('fuente', idioma),
-                style: Theme.of(context).textTheme.labelLarge),
+            Text(
+              t('fuente', idioma),
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
             const SizedBox(width: 12),
             SelectorFuente(
               valor: control.fuenteSeries,
@@ -248,9 +271,7 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
       child: Wrap(
         spacing: 12,
         runSpacing: 12,
-        children: personas
-            .map((p) => _tarjetaPersona(p, idioma))
-            .toList(),
+        children: personas.map((p) => _tarjetaPersona(p, idioma)).toList(),
       ),
     );
   }
@@ -269,8 +290,12 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
   }
 
   Widget _tarjetaSerie(SerieModel serie, AppController app, String idioma) {
-    final esFav =
-        app.esFavorito(serie.fuente, 'serie', serie.id, titulo: serie.titulo);
+    final esFav = app.esFavorito(
+      serie.fuente,
+      'serie',
+      serie.id,
+      titulo: serie.titulo,
+    );
     final language = idioma == 'es' ? 'es-ES' : 'en-US';
     return TarjetaResultado(
       titulo: serie.titulo,
@@ -278,17 +303,28 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
       posterUrl: serie.posterUrl,
       esFavorito: esFav,
       onFavorito: () => app.alternarFavoritoDeSerie(serie),
-      esVisto: app.esVisto(serie.fuente, 'serie', serie.id,
-          titulo: serie.titulo),
+      esVisto: app.esVisto(
+        serie.fuente,
+        'serie',
+        serie.id,
+        titulo: serie.titulo,
+      ),
       onVisto: () => app.alternarVistoDeSerie(serie),
       onAbrir: () => DetalleView.abrirSerie(context, serie, language),
     );
   }
 
   Widget _tarjetaPelicula(
-      PeliculaModel pelicula, AppController app, String idioma) {
-    final esFav = app.esFavorito('tmdb', 'pelicula', pelicula.id,
-        titulo: pelicula.titulo);
+    PeliculaModel pelicula,
+    AppController app,
+    String idioma,
+  ) {
+    final esFav = app.esFavorito(
+      'tmdb',
+      'pelicula',
+      pelicula.id,
+      titulo: pelicula.titulo,
+    );
     final language = idioma == 'es' ? 'es-ES' : 'en-US';
     return TarjetaResultado(
       titulo: pelicula.titulo,
@@ -296,8 +332,12 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
       posterUrl: pelicula.posterUrl,
       esFavorito: esFav,
       onFavorito: () => app.alternarFavoritoDePelicula(pelicula),
-      esVisto: app.esVisto('tmdb', 'pelicula', pelicula.id,
-          titulo: pelicula.titulo),
+      esVisto: app.esVisto(
+        'tmdb',
+        'pelicula',
+        pelicula.id,
+        titulo: pelicula.titulo,
+      ),
       onVisto: () => app.alternarVistoDePelicula(pelicula),
       onAbrir: () => DetalleView.abrirPelicula(context, pelicula, language),
     );
