@@ -54,49 +54,6 @@ class SerieModel {
       ? int.tryParse(fechaEstreno.substring(0, 4))
       : null;
 
-  factory SerieModel.fromJson(Map<String, dynamic> json) {
-    return SerieModel(
-      id: json['id'] as int,
-      fuente: json['fuente'] as String,
-      imdbId: json['imdbId'] as String?,
-      titulo: json['titulo'] as String? ?? '',
-      sinopsis: json['sinopsis'] as String? ?? '',
-      estado: json['estado'] as String? ?? estadoDesconocida,
-      fechaEstreno: json['fechaEstreno'] as String? ?? '',
-      posterUrl: json['posterUrl'] as String?,
-      temporadas: (json['temporadas'] as List<dynamic>? ?? [])
-          .map((t) => TemporadaModel.fromJson(t as Map<String, dynamic>))
-          .toList(),
-      proximoEpisodio: json['proximoEpisodio'] == null
-          ? null
-          : EpisodioModel.fromJson(
-              json['proximoEpisodio'] as Map<String, dynamic>),
-      puntuacion: (json['puntuacion'] as num?)?.toDouble(),
-      generos: (json['generos'] as List<dynamic>? ?? const []).cast<String>(),
-      canales: (json['canales'] as List<dynamic>? ?? const []).cast<String>(),
-      reparto: (json['reparto'] as List<dynamic>? ?? [])
-          .map((r) => RepartoModel.fromJson(r as Map<String, dynamic>))
-          .toList(),
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'fuente': fuente,
-        'imdbId': imdbId,
-        'titulo': titulo,
-        'sinopsis': sinopsis,
-        'estado': estado,
-        'fechaEstreno': fechaEstreno,
-        'posterUrl': posterUrl,
-        'temporadas': temporadas.map((t) => t.toJson()).toList(),
-        'proximoEpisodio': proximoEpisodio?.toJson(),
-        'puntuacion': puntuacion,
-        'generos': generos,
-        'canales': canales,
-        'reparto': reparto.map((r) => r.toJson()).toList(),
-      };
-
   SerieModel copyWith({
     String? imdbId,
     String? sinopsis,
@@ -307,26 +264,6 @@ class TemporadaModel {
     this.episodios = const [],
   });
 
-  factory TemporadaModel.fromJson(Map<String, dynamic> json) {
-    return TemporadaModel(
-      numero: json['numero'] as int? ?? 0,
-      nombre: json['nombre'] as String? ?? '',
-      fechaEstreno: json['fechaEstreno'] as String? ?? '',
-      totalEpisodios: json['totalEpisodios'] as int? ?? 0,
-      episodios: (json['episodios'] as List<dynamic>? ?? [])
-          .map((e) => EpisodioModel.fromJson(e as Map<String, dynamic>))
-          .toList(),
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-        'numero': numero,
-        'nombre': nombre,
-        'fechaEstreno': fechaEstreno,
-        'totalEpisodios': totalEpisodios,
-        'episodios': episodios.map((e) => e.toJson()).toList(),
-      };
-
   /// Temporada a partir del array "seasons" de TMDB.
   factory TemporadaModel.fromTmdb(Map<String, dynamic> json) {
     return TemporadaModel(
@@ -363,8 +300,11 @@ class TmdbRefs {
     return nombres;
   }
 
-  /// Reparto de TMDB (viene en "credits" con append_to_response=credits).
-  static List<RepartoModel> repartoDeCredits(dynamic credits) {
+  /// Reparto de TMDB: "credits" (append_to_response=credits, solo los
+  /// habituales) o, con [agregado], /tv/{id}/aggregate_credits (todos los
+  /// actores de todas las temporadas, invitados incluidos).
+  static List<RepartoModel> repartoDeCredits(dynamic credits,
+      {bool agregado = false}) {
     if (credits is! Map<String, dynamic>) return const [];
     final cast = credits['cast'];
     if (cast is! List) return const [];
@@ -375,31 +315,9 @@ class TmdbRefs {
       if (nombre.isEmpty) continue;
       reparto.add(RepartoModel(
         nombre: nombre,
-        personaje: (e['character'] as String?) ?? '',
-        fotoUrl: urlImagen(e['profile_path'] as String?, tamano: 'w185'),
-        // id de la persona en TMDB (para abrir su ficha al pinchar)
-        idPersona: e['id'] as int?,
-        fuente: 'tmdb',
-      ));
-    }
-    return reparto;
-  }
-
-  /// Reparto completo de TMDB (/tv/{id}/aggregate_credits): trae a todos
-  /// los actores de todas las temporadas (los invitados incluidos),
-  /// mientras que "credits" solo da los habituales de la temporada actual.
-  static List<RepartoModel> repartoDeCreditosAgregados(dynamic datos) {
-    if (datos is! Map<String, dynamic>) return const [];
-    final cast = datos['cast'];
-    if (cast is! List) return const [];
-    final reparto = <RepartoModel>[];
-    for (final e in cast) {
-      if (e is! Map<String, dynamic>) continue;
-      final nombre = (e['name'] as String?) ?? '';
-      if (nombre.isEmpty) continue;
-      reparto.add(RepartoModel(
-        nombre: nombre,
-        personaje: _personajesAgregados(e),
+        personaje: agregado
+            ? _personajesAgregados(e)
+            : (e['character'] as String?) ?? '',
         fotoUrl: urlImagen(e['profile_path'] as String?, tamano: 'w185'),
         // id de la persona en TMDB (para abrir su ficha al pinchar)
         idPersona: e['id'] as int?,

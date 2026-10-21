@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../controllers/app_controller.dart';
 import '../controllers/calendario_controller.dart';
+import '../l10n/app_strings.dart';
 import 'detalle_view.dart';
 import 'widgets/calendario.dart';
 
@@ -43,7 +44,7 @@ class _CuerpoCalendario extends StatelessWidget {
     // Se hace tras el build para no notificar durante el mismo.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (context.mounted) {
-        final language = idioma == 'es' ? 'es-ES' : 'en-US';
+        final language = idiomaApi(idioma);
         context.read<CalendarioController>().syncFavoritos(
               app.favoritos,
               language,
@@ -74,7 +75,7 @@ class _CuerpoCalendario extends StatelessWidget {
   /// Abre el detalle de un episodio o estreno del calendario.
   void _abrirEntrada(
       BuildContext context, EntradaCalendario entrada, String idioma) {
-    final language = idioma == 'es' ? 'es-ES' : 'en-US';
+    final language = idiomaApi(idioma);
     Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => DetalleView(
         tipo: entrada.tipo,

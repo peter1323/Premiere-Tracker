@@ -315,25 +315,29 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
         // llenen el alto disponible (sin scroll ni saltos al cambiar).
         return LayoutBuilder(
           builder: (context, caja) {
-            return DayView<EntradaCalendario>(
-              key: _claveDia,
-              controller: _eventos,
-              initialDay: widget.fechaVisible,
-              minDay: _limiteInferior,
-              maxDay: _limiteSuperior,
-              heightPerMinute: _densidad(caja.maxHeight, _altoCabeceraDia),
-              // Sin scroll interno: las 24 h ya caben exactas y así el
-              // deslizamiento vertical mueve la página (la cabecera de la
-              // app nunca queda inaccesible).
-              scrollPhysics: const NeverScrollableScrollPhysics(),
-              onPageChange: (fecha, pagina) => widget.onFecha(fecha),
-              onEventTap: _abrirEventos,
-              eventTileBuilder: _tileHora,
-              dateStringBuilder: _tituloDia,
-              // La navegación ya es con las flechas y el botón "Hoy":
-              // sin esto, al pinchar el título se abría el showDatePicker
-              // del paquete (pantalla gris que tapaba el calendario).
-              onHeaderTitleTap: (_) async {},
+            return _anchoEntero(
+              caja,
+              (ancho) => DayView<EntradaCalendario>(
+                width: ancho,
+                key: _claveDia,
+                controller: _eventos,
+                initialDay: widget.fechaVisible,
+                minDay: _limiteInferior,
+                maxDay: _limiteSuperior,
+                heightPerMinute: _densidad(caja.maxHeight, _altoCabeceraDia),
+                // Sin scroll interno: las 24 h ya caben exactas y así el
+                // deslizamiento vertical mueve la página (la cabecera de la
+                // app nunca queda inaccesible).
+                scrollPhysics: const NeverScrollableScrollPhysics(),
+                onPageChange: (fecha, pagina) => widget.onFecha(fecha),
+                onEventTap: _abrirEventos,
+                eventTileBuilder: _tileHora,
+                dateStringBuilder: _tituloDia,
+                // La navegación ya es con las flechas y el botón "Hoy":
+                // sin esto, al pinchar el título se abría el showDatePicker
+                // del paquete (pantalla gris que tapaba el calendario).
+                onHeaderTitleTap: (_) async {},
+              ),
             );
           },
         );
@@ -350,25 +354,29 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
       default:
         return LayoutBuilder(
           builder: (context, caja) {
-            return WeekView<EntradaCalendario>(
-              key: _claveSemana,
-              controller: _eventos,
-              initialDay: widget.fechaVisible,
-              minDay: _limiteInferior,
-              maxDay: _limiteSuperior,
-              heightPerMinute: _densidad(caja.maxHeight, _altoCabeceraSemana),
-              // Igual que en Día: sin scroll interno para que la página
-              // siempre pueda subir hasta la cabecera de la app.
-              scrollPhysics: const NeverScrollableScrollPhysics(),
-              onPageChange: (fecha, pagina) => widget.onFecha(fecha),
-              onEventTap: _abrirEventos,
-              eventTileBuilder: _tileHora,
-              headerStringBuilder: _tituloSemana,
-              // Sin columna de número de semana (ocupaba una columna entera)
-              weekNumberBuilder: (_) => const SizedBox.shrink(),
-              // Igual que en Día: el clic en el título no abre el
-              // showDatePicker del paquete; se navega con las flechas.
-              onHeaderTitleTap: (_) async {},
+            return _anchoEntero(
+              caja,
+              (ancho) => WeekView<EntradaCalendario>(
+                width: ancho,
+                key: _claveSemana,
+                controller: _eventos,
+                initialDay: widget.fechaVisible,
+                minDay: _limiteInferior,
+                maxDay: _limiteSuperior,
+                heightPerMinute: _densidad(caja.maxHeight, _altoCabeceraSemana),
+                // Igual que en Día: sin scroll interno para que la página
+                // siempre pueda subir hasta la cabecera de la app.
+                scrollPhysics: const NeverScrollableScrollPhysics(),
+                onPageChange: (fecha, pagina) => widget.onFecha(fecha),
+                onEventTap: _abrirEventos,
+                eventTileBuilder: _tileHora,
+                headerStringBuilder: _tituloSemana,
+                // Sin columna de número de semana (ocupaba una columna entera)
+                weekNumberBuilder: (_) => const SizedBox.shrink(),
+                // Igual que en Día: el clic en el título no abre el
+                // showDatePicker del paquete; se navega con las flechas.
+                onHeaderTitleTap: (_) async {},
+              ),
             );
           },
         );
@@ -448,6 +456,25 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
     final m = partes.length > 1 ? int.tryParse(partes[1]) : null;
     if (h == null || m == null) return null;
     return DateTime(fecha.year, fecha.month, fecha.day, h, m);
+  }
+
+  /// Día y Semana del paquete calendar_view pasan página a página con un
+  /// PageView: con un ancho con decimales (p. ej. 687,33 px en un móvil en
+  /// horizontal) el cálculo de páginas no sale exacto y Flutter da error en
+  /// modo depuración. Se usa el ancho redondeado hacia abajo (pierde < 1 px).
+  Widget _anchoEntero(
+    BoxConstraints caja,
+    Widget Function(double ancho) vista,
+  ) {
+    final ancho = caja.maxWidth.floorToDouble();
+    return Align(
+      alignment: Alignment.topLeft,
+      child: SizedBox(
+        width: ancho,
+        height: caja.maxHeight,
+        child: vista(ancho),
+      ),
+    );
   }
 
   /// Vista de mes propia (widgets propios, sin el paquete): cabecera con
@@ -791,37 +818,42 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
           ? esquema.surface
           : esquema.surfaceContainerLow.withValues(alpha: 0.35),
       padding: const EdgeInsets.all(3),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: esHoy ? esquema.primary : null,
-            ),
-            child: Text(
-              dia.day.toString(),
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: esHoy ? esquema.onPrimary : colorTexto,
+      // Celdas bajas (móvil en horizontal): lo que no cabe se recorta por
+      // abajo en vez de desbordarse; no se desliza.
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: esHoy ? esquema.primary : null,
               ),
-            ),
-          ),
-          const SizedBox(height: 2),
-          for (final entrada in lista.take(3)) _chipDe(entrada, colorEvento),
-          if (lista.length > 3)
-            Padding(
-              padding: const EdgeInsets.only(left: 3),
               child: Text(
-                '+${lista.length - 3}',
-                style: TextStyle(fontSize: 11, color: colorTexto),
+                dia.day.toString(),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: esHoy ? esquema.onPrimary : colorTexto,
+                ),
               ),
             ),
-        ],
+            const SizedBox(height: 2),
+            for (final entrada in lista.take(3)) _chipDe(entrada, colorEvento),
+            if (lista.length > 3)
+              Padding(
+                padding: const EdgeInsets.only(left: 3),
+                child: Text(
+                  '+${lista.length - 3}',
+                  style: TextStyle(fontSize: 11, color: colorTexto),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -1067,6 +1099,8 @@ class _SelectorMesState extends State<_SelectorMes> {
     final tema = Theme.of(context);
 
     return AlertDialog(
+      // Con el móvil en horizontal no cabe entero: se desliza
+      scrollable: true,
       contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
       content: SizedBox(
         width: 340,

@@ -17,21 +17,4 @@ class EpisodioModel {
   /// Texto corto tipo "T2E5" (temporada 2, episodio 5).
   String get etiqueta => 'T${temporada}E$numero';
 
-  factory EpisodioModel.fromJson(Map<String, dynamic> json) {
-    return EpisodioModel(
-      temporada: json['temporada'] as int? ?? 0,
-      numero: json['numero'] as int? ?? 0,
-      titulo: json['titulo'] as String? ?? '',
-      fechaEmision: json['fechaEmision'] as String? ?? '',
-      horaEmision: json['horaEmision'] as String? ?? '',
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-        'temporada': temporada,
-        'numero': numero,
-        'titulo': titulo,
-        'fechaEmision': fechaEmision,
-        'horaEmision': horaEmision,
-      };
 }

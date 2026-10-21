@@ -50,28 +50,36 @@ class CopiaSeguridadService {
     final texto = const JsonEncoder.withIndent('  ').convert(datos);
 
     // En móvil no se puede elegir una ruta arbitraria: se pasan los bytes
-    // al sistema y él se encarga de guardar el archivo (null = cancelado).
-    if (Platform.isAndroid || Platform.isIOS) {
-      final guardado = await FilePicker.platform.saveFile(
-        dialogTitle: 'Premiere Tracker',
-        fileName: 'premiere_tracker_favoritos.json',
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-        bytes: utf8.encode(texto),
-      );
-      return guardado != null;
-    }
-
-    // Escritorio: se elige la ruta con el diálogo y se escribe el archivo.
+    // al sistema y él guarda el archivo. En escritorio el diálogo devuelve
+    // la ruta y se escribe aquí. null = el usuario canceló.
+    final esMovil = Platform.isAndroid || Platform.isIOS;
     final destino = await FilePicker.platform.saveFile(
       dialogTitle: 'Premiere Tracker',
       fileName: 'premiere_tracker_favoritos.json',
       type: FileType.custom,
       allowedExtensions: ['json'],
+      bytes: esMovil ? utf8.encode(texto) : null,
     );
-    if (destino == null) return false; // el usuario canceló
-    await File(destino).writeAsString(texto);
+    if (destino == null) return false;
+    if (!esMovil) await File(destino).writeAsString(texto);
     return true;
+  }
+
+  /// Lee una lista de la copia: cada entrada se valida por separado y las
+  /// corruptas se ignoran. Si el campo no existe (copias antiguas sin
+  /// vistos ni notas), lista vacía.
+  static List<T> _leerLista<T>(
+      Object? lista, T Function(Map<String, dynamic>) desdeJson) {
+    final salida = <T>[];
+    if (lista is! List) return salida;
+    for (final item in lista) {
+      try {
+        salida.add(desdeJson(item as Map<String, dynamic>));
+      } catch (_) {
+        // entrada corrupta: se ignora
+      }
+    }
+    return salida;
   }
 
   /// Importa favoritos desde un .json. El archivo se valida antes de nada:
@@ -95,7 +103,12 @@ class CopiaSeguridadService {
     } catch (_) {
       return const ResultadoImportacion(cancelado: false, valido: false);
     }
+    return leerCopia(texto);
+  }
 
+  /// Interpreta el texto de una copia (separado del diálogo de archivos
+  /// para poder probarlo en los tests).
+  static ResultadoImportacion leerCopia(String texto) {
     try {
       final datos = jsonDecode(texto);
       if (datos is! Map<String, dynamic>) {
@@ -105,39 +118,9 @@ class CopiaSeguridadService {
       if (lista is! List) {
         return const ResultadoImportacion(cancelado: false, valido: false);
       }
-      // Cada entrada se valida por separada; las corruptas se ignoran
-      final favoritos = <FavoritoModel>[];
-      for (final item in lista) {
-        try {
-          favoritos.add(FavoritoModel.fromJson(item as Map<String, dynamic>));
-        } catch (_) {
-          // entrada corrupta: se ignora
-        }
-      }
-      // Vistos: campo nuevo, opcional (las copias antiguas no lo traen)
-      final vistos = <FavoritoModel>[];
-      final listaVistos = datos['vistos'];
-      if (listaVistos is List) {
-        for (final item in listaVistos) {
-          try {
-            vistos.add(FavoritoModel.fromJson(item as Map<String, dynamic>));
-          } catch (_) {
-            // entrada corrupta: se ignora
-          }
-        }
-      }
-      // Notas: campo nuevo, opcional (las copias antiguas no lo traen)
-      final notas = <NotaModel>[];
-      final listaNotas = datos['notas'];
-      if (listaNotas is List) {
-        for (final item in listaNotas) {
-          try {
-            notas.add(NotaModel.fromJson(item as Map<String, dynamic>));
-          } catch (_) {
-            // entrada corrupta: se ignora
-          }
-        }
-      }
+      final favoritos = _leerLista(lista, FavoritoModel.fromJson);
+      final vistos = _leerLista(datos['vistos'], FavoritoModel.fromJson);
+      final notas = _leerLista(datos['notas'], NotaModel.fromJson);
       // Si había entradas pero ninguna es válida, el archivo no sirve
       if (lista.isNotEmpty && favoritos.isEmpty) {
         return const ResultadoImportacion(cancelado: false, valido: false);

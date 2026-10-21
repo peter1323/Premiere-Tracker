@@ -182,7 +182,7 @@ class _Resultados extends StatelessWidget {
           onAbrir: () => MangaDetalleView.abrir(
             context,
             manga: manga,
-            language: strings == 'es' ? 'es-ES' : 'en-US',
+            language: idiomaApi(strings),
           ),
         );
       },

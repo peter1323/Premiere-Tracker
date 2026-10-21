@@ -1,29 +1,47 @@
-// VISTA de la pantalla Vistos (sección 4 del menú). Muestra la lista de
-// títulos vistos (o leídos, para los mangas) del usuario con un buscador
-// y un filtro de 5 pestañas (igual que Favoritos). Al tocar una tarjeta
-// abre su ficha. Solo dibuja y llama a VistosController; la lista le
+// VISTA de las pantallas Favoritos (sección 3) y Vistos (sección 4): son
+// la misma pantalla con distinta lista. Muestra la lista del usuario con
+// un buscador por nombre y un filtro de 5 pestañas (Todo / Series /
+// Películas / Manga-Manhwa-Manhua / Novelas). Al tocar una tarjeta abre
+// su ficha. Solo dibuja y llama a ListaGuardadaController; la lista le
 // llega de AppController. Vive en el IndexedStack.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../controllers/app_controller.dart';
-import '../controllers/vistos_controller.dart';
+import '../controllers/lista_guardada_controller.dart';
 import '../l10n/app_strings.dart';
 import '../models/favorito_model.dart';
 import 'detalle_view.dart';
+import 'widgets/estado_vacio.dart';
 import 'widgets/tarjeta_resultado.dart';
 
-/// Pantalla de Vistos: series y películas que el usuario actual ha
-/// marcado como vistas, con buscador por nombre y filtro Todo /
-/// Series / Películas (mismo estilo que Favoritos).
-class VistosView extends StatefulWidget {
+/// Pantalla de Favoritos.
+class FavoritosView extends StatelessWidget {
+  const FavoritosView({super.key});
+
+  @override
+  Widget build(BuildContext context) =>
+      const ListaGuardadaView(esVistos: false);
+}
+
+/// Pantalla de Vistos (o Leídos, para los mangas).
+class VistosView extends StatelessWidget {
   const VistosView({super.key});
 
   @override
-  State<VistosView> createState() => _VistosViewState();
+  Widget build(BuildContext context) => const ListaGuardadaView(esVistos: true);
 }
 
-class _VistosViewState extends State<VistosView> {
+/// Lista guardada del usuario: favoritos o vistos según [esVistos].
+class ListaGuardadaView extends StatefulWidget {
+  final bool esVistos;
+  const ListaGuardadaView({super.key, required this.esVistos});
+
+  @override
+  State<ListaGuardadaView> createState() => _ListaGuardadaViewState();
+}
+
+class _ListaGuardadaViewState extends State<ListaGuardadaView> {
   final TextEditingController _buscador = TextEditingController();
 
   @override
@@ -36,36 +54,34 @@ class _VistosViewState extends State<VistosView> {
   Widget build(BuildContext context) {
     // El controlador vive con esta pantalla
     return ChangeNotifierProvider(
-      create: (_) => VistosController(),
-      child: _CuerpoVistos(buscador: _buscador),
+      create: (_) => ListaGuardadaController(),
+      child: _Cuerpo(buscador: _buscador, esVistos: widget.esVistos),
     );
   }
 }
 
-class _CuerpoVistos extends StatefulWidget {
+class _Cuerpo extends StatelessWidget {
   final TextEditingController buscador;
-  const _CuerpoVistos({required this.buscador});
+  final bool esVistos;
+  const _Cuerpo({required this.buscador, required this.esVistos});
 
-  @override
-  State<_CuerpoVistos> createState() => _CuerpoVistosState();
-}
-
-class _CuerpoVistosState extends State<_CuerpoVistos> {
   @override
   Widget build(BuildContext context) {
     final app = context.watch<AppController>();
-    final control = context.watch<VistosController>();
+    final control = context.watch<ListaGuardadaController>();
     final idioma = app.idioma;
 
-    // Mantiene la lista al día con los vistos del usuario actual.
+    // Mantiene la lista al día con la del usuario actual.
     // Se hace tras el build para no notificar durante el mismo.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<VistosController>().syncVistos(app.vistos);
+      if (context.mounted) {
+        context
+            .read<ListaGuardadaController>()
+            .sincronizar(esVistos ? app.vistos : app.favoritos);
       }
     });
 
-    final vistos = control.vistosFiltrados;
+    final elementos = control.filtrados;
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -76,13 +92,13 @@ class _CuerpoVistosState extends State<_CuerpoVistos> {
           // comprimida a píxeles; en alturas normales, igual que siempre.
           final fijo = <Widget>[
             Text(
-              t('vistos', idioma),
+              t(esVistos ? 'vistos' : 'favoritos', idioma),
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 16),
             // Buscador por nombre
             TextField(
-              controller: widget.buscador,
+              controller: buscador,
               onChanged: control.cambiarConsulta,
               decoration: InputDecoration(
                 hintText: t('buscarFavoritosHint', idioma),
@@ -91,7 +107,7 @@ class _CuerpoVistosState extends State<_CuerpoVistos> {
                   tooltip: t('cerrar', idioma),
                   icon: const Icon(Icons.clear),
                   onPressed: () {
-                    widget.buscador.clear();
+                    buscador.clear();
                     control.cambiarConsulta('');
                   },
                 ),
@@ -133,13 +149,15 @@ class _CuerpoVistosState extends State<_CuerpoVistos> {
           ];
 
           // Lista o estado vacío
-          final lista = !control.hayVistos
-              ? _EstadoVacio(
-                  icono: Icons.visibility_outlined,
-                  texto: t('sinVistos', idioma),
+          final lista = !control.hayElementos
+              ? EstadoVacio(
+                  icono: esVistos
+                      ? Icons.visibility_outlined
+                      : Icons.favorite_border,
+                  texto: t(esVistos ? 'sinVistos' : 'sinFavoritos', idioma),
                 )
-              : vistos.isEmpty
-              ? _EstadoVacio(
+              : elementos.isEmpty
+              ? EstadoVacio(
                   icono: Icons.search_off,
                   texto: t('sinCoincidencias', idioma),
                 )
@@ -147,8 +165,8 @@ class _CuerpoVistosState extends State<_CuerpoVistos> {
                   child: Wrap(
                     spacing: 12,
                     runSpacing: 12,
-                    children: vistos
-                        .map((v) => _tarjeta(v, app, idioma))
+                    children: elementos
+                        .map((f) => _tarjeta(context, f, app, idioma))
                         .toList(),
                   ),
                 );
@@ -176,49 +194,27 @@ class _CuerpoVistosState extends State<_CuerpoVistos> {
     );
   }
 
-  /// Tarjeta del visto: al pulsar abre el detalle; el ojo lo quita de
-  /// vistos y el corazón alterna su estado de favorito.
-  Widget _tarjeta(FavoritoModel visto, AppController app, String idioma) {
-    final language = idioma == 'es' ? 'es-ES' : 'en-US';
+  /// Tarjeta: al pulsar abre el detalle. En Favoritos el corazón lo quita
+  /// y el ojo alterna visto; en Vistos el ojo lo quita y el corazón
+  /// alterna favorito.
+  Widget _tarjeta(BuildContext context, FavoritoModel item, AppController app,
+      String idioma) {
+    final language = idiomaApi(idioma);
     return TarjetaResultado(
-      titulo: visto.titulo,
-      anio: visto.anio,
-      posterUrl: visto.posterUrl,
-      esFavorito: app.esFavorito(
-        visto.fuente,
-        visto.tipo,
-        visto.id,
-        titulo: visto.titulo,
-      ),
-      onFavorito: () => app.alternarFavorito(visto),
-      esVisto: true, // en esta pantalla todo está marcado como visto
-      onVisto: () => app.quitarVisto(visto.idUnico),
-      onAbrir: () => DetalleView.abrirFavorito(context, visto, language),
-    );
-  }
-}
-
-/// Estado vacío centrado de la pantalla de vistos.
-class _EstadoVacio extends StatelessWidget {
-  final IconData icono;
-  final String texto;
-  const _EstadoVacio({required this.icono, required this.texto});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icono, size: 56, color: Theme.of(context).colorScheme.outline),
-          const SizedBox(height: 12),
-          Text(
-            texto,
-            style: Theme.of(context).textTheme.bodyLarge,
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+      titulo: item.titulo,
+      anio: item.anio,
+      posterUrl: item.posterUrl,
+      esFavorito: !esVistos ||
+          app.esFavorito(item.fuente, item.tipo, item.id, titulo: item.titulo),
+      onFavorito: esVistos
+          ? () => app.alternarFavorito(item)
+          : () => app.quitarFavorito(item.idUnico),
+      esVisto: esVistos ||
+          app.esVisto(item.fuente, item.tipo, item.id, titulo: item.titulo),
+      onVisto: esVistos
+          ? () => app.quitarVisto(item.idUnico)
+          : () => app.alternarVisto(item),
+      onAbrir: () => DetalleView.abrirFavorito(context, item, language),
     );
   }
 }

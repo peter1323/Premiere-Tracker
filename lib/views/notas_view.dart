@@ -12,6 +12,7 @@ import '../controllers/app_controller.dart';
 import '../controllers/notas_controller.dart';
 import '../l10n/app_strings.dart';
 import '../models/nota_model.dart';
+import 'widgets/estado_vacio.dart';
 
 /// Pantalla de Notas: tabla con Título | Última vista | Más datos para
 /// recordar dónde se dejó cada serie o película. Solo el título es
@@ -115,12 +116,12 @@ class _CuerpoNotasState extends State<_CuerpoNotas> {
 
           // Tabla o estado vacío
           final lista = !control.hayNotas
-              ? _EstadoVacio(
+              ? EstadoVacio(
                   icono: Icons.edit_note,
                   texto: t('sinNotas', idioma),
                 )
               : notas.isEmpty
-              ? _EstadoVacio(
+              ? EstadoVacio(
                   icono: Icons.search_off,
                   texto: t('sinCoincidencias', idioma),
                 )
@@ -260,6 +261,8 @@ class _DialogoNotaState extends State<_DialogoNota> {
   Widget build(BuildContext context) {
     final idioma = widget.idioma;
     return AlertDialog(
+      // Con el móvil en horizontal y el teclado abierto no cabe: se desliza
+      scrollable: true,
       title: Text(
         widget.nota == null ? t('anadirNota', idioma) : t('editarNota', idioma),
       ),
@@ -339,27 +342,3 @@ class _DialogoNotaState extends State<_DialogoNota> {
   }
 }
 
-/// Estado vacío centrado de la pantalla de notas.
-class _EstadoVacio extends StatelessWidget {
-  final IconData icono;
-  final String texto;
-  const _EstadoVacio({required this.icono, required this.texto});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icono, size: 56, color: Theme.of(context).colorScheme.outline),
-          const SizedBox(height: 12),
-          Text(
-            texto,
-            style: Theme.of(context).textTheme.bodyLarge,
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-}

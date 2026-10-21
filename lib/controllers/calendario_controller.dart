@@ -81,6 +81,10 @@ class CalendarioController extends ChangeNotifier {
   /// Guarda los favoritos y recarga el calendario solo si algo cambió.
   Future<void> syncFavoritos(
       List<FavoritoModel> favoritos, String language) async {
+    // Solo series y películas: los mangas y novelas no van al calendario
+    favoritos = favoritos
+        .where((f) => f.tipo == 'serie' || f.tipo == 'pelicula')
+        .toList();
     final firma = '${favoritos.map((f) => f.idUnico).join('|')}#$language';
     if (firma == _firmaFavoritos) return;
     _firmaFavoritos = firma;

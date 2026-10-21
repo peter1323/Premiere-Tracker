@@ -94,8 +94,9 @@ class _UsuariosViewState extends State<UsuariosView> {
                         Text(
                           t(controlador.errorCarga!, idioma),
                           textAlign: TextAlign.center,
-                          style:
-                              TextStyle(color: Theme.of(context).colorScheme.error),
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
                         ),
                         TextButton.icon(
                           onPressed: controlador.cargarUsuarios,
@@ -105,15 +106,12 @@ class _UsuariosViewState extends State<UsuariosView> {
                       ],
                     ),
                   ),
-                ]
-                else if (controlador.usuarios.isEmpty)
-                  Text(
-                    t('sinUsuarios', idioma),
-                    textAlign: TextAlign.center,
-                  )
+                ] else if (controlador.usuarios.isEmpty)
+                  Text(t('sinUsuarios', idioma), textAlign: TextAlign.center)
                 else
-                  ...controlador.usuarios
-                      .map((u) => _tarjetaUsuario(u, idioma)),
+                  ...controlador.usuarios.map(
+                    (u) => _tarjetaUsuario(u, idioma),
+                  ),
                 const SizedBox(height: 24),
                 FilledButton.icon(
                   onPressed: () => _mostrarDialogoCrear(idioma),
@@ -188,23 +186,19 @@ class _UsuariosViewState extends State<UsuariosView> {
     );
 
     if (creado == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(t('usuarioCreado', idioma))),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(t('usuarioCreado', idioma))));
     }
   }
 
   /// Sección de la clave TMDB: estado actual, campo para insertarla y
-  /// botones para modificarla o volver a la del .env. La clave se guarda
-  /// en el dispositivo y nunca se muestra completa.
+  /// botón para modificarla. La clave se guarda en el dispositivo y nunca
+  /// se muestra completa.
   Widget _seccionClave(UsuariosController control, String idioma) {
     final esquema = Theme.of(context).colorScheme;
     // Sin clave se muestra el campo directamente (modo edición)
     final editando = _editandoClave || !control.hayClaveTmdb;
-    final origen = t(
-      control.claveTmdbEnApp ? 'claveGuardadaApp' : 'claveDelEntorno',
-      idioma,
-    );
+    final origen = t('claveGuardadaApp', idioma);
 
     return Card(
       margin: EdgeInsets.zero,
@@ -217,8 +211,10 @@ class _UsuariosViewState extends State<UsuariosView> {
               children: [
                 Icon(Icons.vpn_key_outlined, color: esquema.primary),
                 const SizedBox(width: 8),
-                Text(t('claveTmdb', idioma),
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  t('claveTmdb', idioma),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -237,32 +233,17 @@ class _UsuariosViewState extends State<UsuariosView> {
                 ],
               ),
               const SizedBox(height: 4),
-              Wrap(
-                spacing: 8,
-                children: [
-                  TextButton.icon(
-                    onPressed: () => setState(() {
-                      _editandoClave = true;
-                      _errorClave = null;
-                      _mostrarClave = false;
-                    }),
-                    icon: const Icon(Icons.edit_outlined, size: 18),
-                    label: Text(t('modificarClave', idioma)),
-                  ),
-                  if (control.claveTmdbEnApp && control.hayClaveDelEntorno)
-                    TextButton.icon(
-                      onPressed: () {
-                        control.usarClaveDelEntorno();
-                        setState(() {
-                          _editandoClave = false;
-                          _errorClave = null;
-                          _claveCtrl.clear();
-                        });
-                      },
-                      icon: const Icon(Icons.restore, size: 18),
-                      label: Text(t('usarClaveEntorno', idioma)),
-                    ),
-                ],
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => setState(() {
+                    _editandoClave = true;
+                    _errorClave = null;
+                    _mostrarClave = false;
+                  }),
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: Text(t('modificarClave', idioma)),
+                ),
               ),
             ] else ...[
               TextField(
@@ -277,16 +258,18 @@ class _UsuariosViewState extends State<UsuariosView> {
                   suffixIcon: IconButton(
                     onPressed: () =>
                         setState(() => _mostrarClave = !_mostrarClave),
-                    icon: Icon(_mostrarClave
-                        ? Icons.visibility_off
-                        : Icons.visibility),
+                    icon: Icon(
+                      _mostrarClave ? Icons.visibility_off : Icons.visibility,
+                    ),
                   ),
                 ),
               ),
               if (control.comprobandoClave) ...[
                 const SizedBox(height: 8),
-                Text(t('claveComprobando', idioma),
-                    style: Theme.of(context).textTheme.bodySmall),
+                Text(
+                  t('claveComprobando', idioma),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ],
               if (_errorClave != null) ...[
                 const SizedBox(height: 8),
@@ -402,16 +385,19 @@ class _DialogoPinState extends State<_DialogoPin> {
   /// limpia el campo para reescribirlo. A partir del segundo
   /// fallo se enseña la pista con los dos primeros dígitos.
   void intentarEntrar() {
-    final correcto = context
-        .read<UsuariosController>()
-        .validarPin(widget.usuario, textoPin.text);
+    final correcto = context.read<UsuariosController>().validarPin(
+      widget.usuario,
+      textoPin.text,
+    );
     if (correcto) {
       Navigator.of(context).pop(widget.usuario);
       return;
     }
     fallos++;
     if (fallos >= 2 && pista == null) {
-      final digitos = context.read<UsuariosController>().pistaPin(widget.usuario);
+      final digitos = context.read<UsuariosController>().pistaPin(
+        widget.usuario,
+      );
       if (digitos.isNotEmpty) {
         pista = '${t('pinPista', widget.idioma)} $digitos';
       }
@@ -430,7 +416,10 @@ class _DialogoPinState extends State<_DialogoPin> {
       errorNuevoPin = null;
     });
     final cambio = await context.read<UsuariosController>().cambiarPinDeUsuario(
-        widget.usuario, textoPinActual.text, textoPinNuevo.text);
+      widget.usuario,
+      textoPinActual.text,
+      textoPinNuevo.text,
+    );
     if (!mounted) return;
     if (cambio.error != null) {
       setState(() {
@@ -442,9 +431,8 @@ class _DialogoPinState extends State<_DialogoPin> {
       });
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(t('pinCambiado', widget.idioma))),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(t('pinCambiado', widget.idioma))));
     Navigator.of(context).pop(cambio.usuario);
   }
 
@@ -553,8 +541,11 @@ class _DialogoPinState extends State<_DialogoPin> {
     }
 
     return AlertDialog(
+      // Con el móvil en horizontal y el teclado abierto no cabe: se desliza
+      scrollable: true,
       title: Text(
-          paso == 'entrar' ? widget.usuario.nombre : t('cambiarPin', idioma)),
+        paso == 'entrar' ? widget.usuario.nombre : t('cambiarPin', idioma),
+      ),
       content: contenido,
       actions: [
         TextButton(
@@ -571,13 +562,16 @@ class _DialogoPinState extends State<_DialogoPin> {
             }
           },
           child: Text(
-              paso == 'entrar' ? t('cancelar', idioma) : t('volver', idioma)),
+            paso == 'entrar' ? t('cancelar', idioma) : t('volver', idioma),
+          ),
         ),
         FilledButton(
-          onPressed:
-              paso == 'entrar' ? intentarEntrar : () => intentarCambiar(),
+          onPressed: paso == 'entrar'
+              ? intentarEntrar
+              : () => intentarCambiar(),
           child: Text(
-              paso == 'entrar' ? t('entrar', idioma) : t('guardar', idioma)),
+            paso == 'entrar' ? t('entrar', idioma) : t('guardar', idioma),
+          ),
         ),
       ],
     );
@@ -624,9 +618,10 @@ class _DialogoCrearState extends State<_DialogoCrear> {
   Future<void> intentar() async {
     final idioma = widget.idioma;
     setState(() => errorGeneral = null);
-    final errorClave = await context
-        .read<UsuariosController>()
-        .crearUsuario(textoNombre.text, textoPin.text);
+    final errorClave = await context.read<UsuariosController>().crearUsuario(
+      textoNombre.text,
+      textoPin.text,
+    );
     if (!mounted) return;
     if (errorClave == null) {
       Navigator.of(context).pop(true);
@@ -649,6 +644,8 @@ class _DialogoCrearState extends State<_DialogoCrear> {
     final idioma = widget.idioma;
 
     return AlertDialog(
+      // Con el móvil en horizontal y el teclado abierto no cabe: se desliza
+      scrollable: true,
       title: Text(t('crearUsuario', idioma)),
       content: SizedBox(
         width: 300,
@@ -659,7 +656,9 @@ class _DialogoCrearState extends State<_DialogoCrear> {
               Text(
                 errorGeneral!,
                 style: TextStyle(
-                    color: Theme.of(context).colorScheme.error, fontSize: 13),
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 13,
+                ),
               ),
               const SizedBox(height: 12),
             ],
@@ -693,10 +692,7 @@ class _DialogoCrearState extends State<_DialogoCrear> {
           onPressed: () => Navigator.of(context).pop(),
           child: Text(t('cancelar', idioma)),
         ),
-        FilledButton(
-          onPressed: intentar,
-          child: Text(t('aceptar', idioma)),
-        ),
+        FilledButton(onPressed: intentar, child: Text(t('aceptar', idioma))),
       ],
     );
   }

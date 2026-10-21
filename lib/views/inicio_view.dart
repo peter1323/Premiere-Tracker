@@ -14,6 +14,7 @@ import '../models/persona_model.dart';
 import '../models/serie_model.dart';
 import 'detalle_view.dart';
 import 'persona_view.dart';
+import 'widgets/estado_vacio.dart';
 import 'widgets/selector_fuente.dart';
 import 'widgets/tarjeta_persona.dart';
 import 'widgets/tarjeta_resultado.dart';
@@ -152,10 +153,10 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
     }
     if (!control.hayConsulta) {
       // Sin búsqueda todavía: se invita a usar el buscador
-      return _EstadoVacio(icono: Icons.search, texto: t('inicioVacio', idioma));
+      return EstadoVacio(icono: Icons.search, texto: t('inicioVacio', idioma));
     }
     if (!control.hayResultados) {
-      return _EstadoVacio(
+      return EstadoVacio(
         icono: Icons.search_off,
         texto: t('sinResultados', idioma),
       );
@@ -214,7 +215,7 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
         const SizedBox(height: 12),
         if (series.isEmpty)
           Expanded(
-            child: _EstadoVacio(
+            child: EstadoVacio(
               icono: Icons.tv_off,
               texto: t('sinResultados', idioma),
             ),
@@ -241,7 +242,7 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
     final peliculas = control.peliculasVisibles;
 
     if (peliculas.isEmpty) {
-      return _EstadoVacio(
+      return EstadoVacio(
         icono: Icons.movie_filter_outlined,
         texto: t('sinResultados', idioma),
       );
@@ -262,7 +263,7 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
     final personas = control.personasVisibles;
 
     if (personas.isEmpty) {
-      return _EstadoVacio(
+      return EstadoVacio(
         icono: Icons.person_off_outlined,
         texto: t('sinResultados', idioma),
       );
@@ -283,7 +284,7 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
       departamento: persona.departamento,
       idioma: idioma,
       onAbrir: () {
-        final language = idioma == 'es' ? 'es-ES' : 'en-US';
+        final language = idiomaApi(idioma);
         PersonaView.abrir(context, persona, language);
       },
     );
@@ -296,7 +297,7 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
       serie.id,
       titulo: serie.titulo,
     );
-    final language = idioma == 'es' ? 'es-ES' : 'en-US';
+    final language = idiomaApi(idioma);
     return TarjetaResultado(
       titulo: serie.titulo,
       anio: serie.anio,
@@ -325,7 +326,7 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
       pelicula.id,
       titulo: pelicula.titulo,
     );
-    final language = idioma == 'es' ? 'es-ES' : 'en-US';
+    final language = idiomaApi(idioma);
     return TarjetaResultado(
       titulo: pelicula.titulo,
       anio: pelicula.anio,
@@ -376,27 +377,3 @@ class _Aviso extends StatelessWidget {
   }
 }
 
-/// Estado vacío centrado (sin búsqueda o sin resultados).
-class _EstadoVacio extends StatelessWidget {
-  final IconData icono;
-  final String texto;
-  const _EstadoVacio({required this.icono, required this.texto});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icono, size: 56, color: Theme.of(context).colorScheme.outline),
-          const SizedBox(height: 12),
-          Text(
-            texto,
-            style: Theme.of(context).textTheme.bodyLarge,
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-}

@@ -1,9 +1,8 @@
 // Punto de entrada y raíz de la app Premiere Tracker.
 //
 // Este archivo hace tres cosas:
-//  1. Arranca la app y carga la API key de TMDB: primero el archivo
-//     `.env` y después (si existe) la que el usuario guardó en la app;
-//     si falta, la app funciona igual y se puede configurar después.
+//  1. Arranca la app y carga la API key de TMDB que el usuario guardó en
+//     la app; si falta, la app funciona igual y se configura después.
 //  2. Crea los controladores globales (AppController y UsuariosController)
 //     con el paquete `provider` y monta el MaterialApp con el tema y el
 //     idioma del usuario.
@@ -17,7 +16,6 @@ import 'package:calendar_view/calendar_view.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 
 import 'controllers/app_controller.dart';
@@ -26,12 +24,11 @@ import 'l10n/app_strings.dart';
 import 'services/clave_service.dart';
 import 'views/ajustes_view.dart';
 import 'views/calendario_view.dart';
-import 'views/favoritos_view.dart';
+import 'views/lista_guardada_view.dart';
 import 'views/inicio_view.dart';
 import 'views/mangas_view.dart';
 import 'views/notas_view.dart';
 import 'views/usuarios_view.dart';
-import 'views/vistos_view.dart';
 import 'views/widgets/barra_superior.dart';
 import 'views/widgets/menu_lateral.dart';
 
@@ -43,15 +40,7 @@ final GlobalKey<NavigatorState> _claveNavegador = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Carga el .env con la clave de TMDB. Si falta o está vacío, la app
-  // sigue funcionando: la clave se configurará en la pantalla de
-  // usuarios y se guardará en el dispositivo (SharedPreferences).
-  try {
-    await dotenv.load(fileName: '.env', isOptional: true);
-  } catch (_) {
-    // .env vacío o ilegible: ClaveService quedará sin clave de origen
-  }
-  // Clave activa: gana la guardada en la app sobre la del .env
+  // Clave de TMDB guardada en la app (si el usuario ya la configuró)
   await ClaveService.cargar();
 
   runApp(const PremiereTrackerApp());
@@ -68,7 +57,8 @@ class PremiereTrackerApp extends StatelessWidget {
         // Estado global: usuario actual, tema, idioma y favoritos
         // (cargarTemaInicial aplica el último tema en la pantalla de usuarios)
         ChangeNotifierProvider(
-            create: (_) => AppController()..cargarTemaInicial()),
+          create: (_) => AppController()..cargarTemaInicial(),
+        ),
         // Pantalla de usuarios
         ChangeNotifierProvider(create: (_) => UsuariosController()),
       ],
@@ -104,59 +94,23 @@ class _Aplicacion extends StatelessWidget {
 }
 
 /// Tema claro (Material 3).
-ThemeData crearTemaClaro() {
-  final esquema = ColorScheme.fromSeed(
-    seedColor: const Color(0xFF6C3FE0), // Violeta
-    brightness: Brightness.light,
-  );
-  return ThemeData(
-    useMaterial3: true,
-    colorScheme: esquema,
-    scaffoldBackgroundColor: const Color(0xFFF6F4FB),
-    appBarTheme: AppBarTheme(
-      backgroundColor: esquema.surface,
-      foregroundColor: esquema.onSurface,
-      elevation: 0,
-      centerTitle: false,
-    ),
-    navigationRailTheme: NavigationRailThemeData(
-      backgroundColor: esquema.surface,
-      indicatorColor: esquema.secondaryContainer,
-    ),
-    cardTheme: CardThemeData(
-      color: esquema.surface,
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: esquema.surfaceContainerHighest.withValues(alpha: 0.4),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-    ),
-    segmentedButtonTheme: SegmentedButtonThemeData(
-      style: ButtonStyle(
-        shape: WidgetStatePropertyAll(
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      ),
-    ),
-    extensions: _extensionesCalendario(esquema),
-  );
-}
+ThemeData crearTemaClaro() =>
+    _crearTema(Brightness.light, const Color(0xFFF6F4FB), 0.4);
 
 /// Tema oscuro (Material 3).
-ThemeData crearTemaOscuro() {
+ThemeData crearTemaOscuro() =>
+    _crearTema(Brightness.dark, const Color(0xFF131018), 0.3);
+
+/// Tema común: solo cambian el brillo, el fondo y la opacidad de los campos.
+ThemeData _crearTema(Brightness brillo, Color fondo, double alphaCampos) {
   final esquema = ColorScheme.fromSeed(
     seedColor: const Color(0xFF6C3FE0), // Violeta
-    brightness: Brightness.dark,
+    brightness: brillo,
   );
   return ThemeData(
     useMaterial3: true,
     colorScheme: esquema,
-    scaffoldBackgroundColor: const Color(0xFF131018),
+    scaffoldBackgroundColor: fondo,
     appBarTheme: AppBarTheme(
       backgroundColor: esquema.surface,
       foregroundColor: esquema.onSurface,
@@ -174,7 +128,7 @@ ThemeData crearTemaOscuro() {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: esquema.surfaceContainerHighest.withValues(alpha: 0.3),
+      fillColor: esquema.surfaceContainerHighest.withValues(alpha: alphaCampos),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
@@ -268,7 +222,8 @@ class _VistaPrincipalProvisionalState
     // Móvil (Android/iOS): barra inferior de navegación, porque el raíl
     // lateral no cabe en pantalla pequeña. SafeArea respeta la barra de
     // estado y las muescas del dispositivo.
-    final esMovil = defaultTargetPlatform == TargetPlatform.android ||
+    final esMovil =
+        defaultTargetPlatform == TargetPlatform.android ||
         defaultTargetPlatform == TargetPlatform.iOS;
     if (esMovil) {
       return Scaffold(

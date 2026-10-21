@@ -41,7 +41,9 @@ class ResultadoBusqueda {
 /// y el error de cada una se controla por separado.
 class BusquedaService {
   static Future<ResultadoBusqueda> buscar(
-      String consulta, String language) async {
+    String consulta,
+    String language,
+  ) async {
     // Las cuatro peticiones a la vez; cada una captura su propio error.
     final resultados = await Future.wait([
       _buscarTmdb(consulta, language),
@@ -76,10 +78,11 @@ class BusquedaService {
 
   /// Fusiona las personas de TMDB y TVMaze sin repetir nombres:
   /// primero TMDB, y luego las de TVMaze que no estén ya.
-  static List<PersonaModel> _fusionarPersonas(List<PersonaModel> tmdb,
-      List<PersonaModel> tvmaze) {
-    final nombres =
-        tmdb.map((p) => p.nombre.trim().toLowerCase()).toSet();
+  static List<PersonaModel> _fusionarPersonas(
+    List<PersonaModel> tmdb,
+    List<PersonaModel> tvmaze,
+  ) {
+    final nombres = tmdb.map((p) => p.nombre.trim().toLowerCase()).toSet();
     final fusionadas = List<PersonaModel>.of(tmdb);
     for (final p in tvmaze) {
       if (!nombres.contains(p.nombre.trim().toLowerCase())) {
@@ -104,7 +107,9 @@ class BusquedaService {
   /// Enlaza una serie de TVMaze con la de TMDB (búsqueda por título).
   /// Devuelve null si TMDB no la tiene.
   static Future<SerieModel?> enlazarEnTmdb(
-      SerieModel serie, String language) async {
+    SerieModel serie,
+    String language,
+  ) async {
     try {
       final series = await TmdbService.buscarSeries(serie.titulo, language);
       if (series.isEmpty) return null;
@@ -119,14 +124,20 @@ class BusquedaService {
   }
 
   static Future<_ResultadoTmdb> _buscarTmdb(
-      String consulta, String language) async {
+    String consulta,
+    String language,
+  ) async {
     try {
       final series = await TmdbService.buscarSeries(consulta, language);
       final peliculas = await TmdbService.buscarPeliculas(consulta, language);
       return _ResultadoTmdb(series, peliculas, true, null);
     } on TmdbException catch (e) {
-      return _ResultadoTmdb(const [], const [], false,
-          e.claveIncorrecta ? 'avisoTmdbKey' : 'avisoTmdb');
+      return _ResultadoTmdb(
+        const [],
+        const [],
+        false,
+        e.claveIncorrecta ? 'avisoTmdbKey' : 'avisoTmdb',
+      );
     } catch (_) {
       return _ResultadoTmdb(const [], const [], false, 'avisoTmdb');
     }
@@ -143,7 +154,9 @@ class BusquedaService {
 
   /// Busca personas en TMDB (anti-fallos: si falla, lista vacía).
   static Future<List<PersonaModel>> _buscarPersonasTmdb(
-      String consulta, String language) async {
+    String consulta,
+    String language,
+  ) async {
     try {
       return await TmdbService.buscarPersonas(consulta, language);
     } catch (_) {
@@ -153,7 +166,8 @@ class BusquedaService {
 
   /// Busca personas en TVMaze (anti-fallos: si falla, lista vacía).
   static Future<List<PersonaModel>> _buscarPersonasTvmaze(
-      String consulta) async {
+    String consulta,
+  ) async {
     try {
       return await TvmazeService.buscarPersonas(consulta);
     } catch (_) {
@@ -164,38 +178,33 @@ class BusquedaService {
   /// Enlaza una persona de TVMaze con su ficha en TMDB (búsqueda por
   /// nombre exacto). Devuelve null si TMDB no la tiene.
   static Future<PersonaModel?> enlazarPersonaEnTmdb(
-      PersonaModel persona, String language) async {
-    try {
-      final encontradas =
-          await TmdbService.buscarPersonas(persona.nombre, language);
-      for (final p in encontradas) {
-        if (p.nombre.trim().toLowerCase() ==
-            persona.nombre.trim().toLowerCase()) {
-          return p;
-        }
-      }
-      return null;
-    } catch (_) {
-      return null;
-    }
-  }
+    PersonaModel persona,
+    String language,
+  ) => _mismoNombre(
+    persona,
+    () => TmdbService.buscarPersonas(persona.nombre, language),
+  );
 
   /// Enlaza una persona de TMDB con su ficha en TVMaze (búsqueda por
   /// nombre exacto). Devuelve null si TVMaze no la tiene.
-  static Future<PersonaModel?> enlazarPersonaEnTvmaze(
-      PersonaModel persona) async {
+  static Future<PersonaModel?> enlazarPersonaEnTvmaze(PersonaModel persona) =>
+      _mismoNombre(persona, () => TvmazeService.buscarPersonas(persona.nombre));
+
+  /// Primera persona de la búsqueda con el mismo nombre (sin mayúsculas ni
+  /// espacios sobrantes); null si no hay o si la búsqueda falla.
+  static Future<PersonaModel?> _mismoNombre(
+    PersonaModel persona,
+    Future<List<PersonaModel>> Function() buscar,
+  ) async {
+    final nombre = persona.nombre.trim().toLowerCase();
     try {
-      final encontradas = await TvmazeService.buscarPersonas(persona.nombre);
-      for (final p in encontradas) {
-        if (p.nombre.trim().toLowerCase() ==
-            persona.nombre.trim().toLowerCase()) {
-          return p;
-        }
+      for (final p in await buscar()) {
+        if (p.nombre.trim().toLowerCase() == nombre) return p;
       }
-      return null;
     } catch (_) {
-      return null;
+      // sin conexión: no se enlaza
     }
+    return null;
   }
 }
 

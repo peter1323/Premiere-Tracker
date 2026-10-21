@@ -55,8 +55,7 @@ const Map<String, Map<String, String>> cadenas = {
     'personas': 'Personas',
     'sinResultados': 'No se han encontrado resultados',
     'mangas': 'Lectura',
-    'mangasAyuda':
-        'Busca mangas, manhwas, manhuas y novelas: ficha, estado y últimos capítulos',
+    'mangasAyuda': 'Busca mangas, manhwas, manhuas y novelas: ficha, estado y últimos capítulos',
     'buscarMangas': 'Título del manga, manhwa, manhua o novela',
     'buscarMangasVacio': 'Escribe un título para buscar',
     'pestanaManga': 'Manga / Manhwa / Manhua',
@@ -104,8 +103,7 @@ const Map<String, Map<String, String>> cadenas = {
     'sinConexion': 'Sin conexión o servicios no disponibles',
     'avisoTvmaze': 'TVMaze no está disponible, mostrando datos de TMDB',
     'avisoTmdb': 'TMDB no está disponible, mostrando datos de TVMaze',
-    'avisoTmdbKey':
-        'Falta la API key de TMDB o es incorrecta. Ve a la pantalla de usuarios para configurarla.',
+    'avisoTmdbKey': 'Falta la API key de TMDB o es incorrecta. Ve a la pantalla de usuarios para configurarla.',
 
     // Calendario
     'calendario': 'Calendario',
@@ -189,20 +187,17 @@ const Map<String, Map<String, String>> cadenas = {
     'borrarUsuarioConfirm':
         '¿Borrar este usuario? Se eliminarán todos sus datos.',
     'creditos': 'Créditos',
-    'tmdbAviso':
-        'This product uses the TMDB API but is not endorsed or certified by TMDB.',
+    'tmdbAviso': 'This product uses the TMDB API but is not endorsed or certified by TMDB.',
     'tvmazeCredit': 'Datos de series proporcionados por TVMaze',
 
     // Clave TMDB (se configura en la pantalla de usuarios)
     'claveTmdb': 'Clave TMDB',
     'claveInsertar': 'Inserte aquí su clave TMDB',
     'claveGuardadaApp': 'Guardada en la app',
-    'claveDelEntorno': 'Del archivo .env',
     'claveComprobando': 'Comprobando la clave…',
     'claveNoValida': 'La clave no es válida, revísala',
     'claveVacia': 'Escribe una clave',
     'modificarClave': 'Modificar clave',
-    'usarClaveEntorno': 'Usar la del .env',
     'obtenerClave': 'Obtener clave',
   },
   'en': {
@@ -229,8 +224,7 @@ const Map<String, Map<String, String>> cadenas = {
     'entrar': 'Enter',
     'sinUsuarios': 'No users yet. Create the first one.',
     'usuarioCreado': 'User created',
-    'errorAlmacenamiento':
-        'Data cannot be read or saved on this device',
+    'errorAlmacenamiento': 'Data cannot be read or saved on this device',
     'reintentar': 'Try again',
 
     // Side menu and top bar
@@ -265,8 +259,7 @@ const Map<String, Map<String, String>> cadenas = {
     'buscarMangasVacio': 'Type a title to search',
     'pestanaManga': 'Manga / Manhwa / Manhua',
     'pestanaNovelas': 'Novels',
-    'errorBuscarMangas':
-        'Search on AniList failed. Check your connection.',
+    'errorBuscarMangas': 'Search on AniList failed. Check your connection.',
     'capitulos': 'Chapters',
     'tomos': 'Volumes',
     'formato': 'Format',
@@ -308,8 +301,7 @@ const Map<String, Map<String, String>> cadenas = {
     'sinConexion': 'No connection or services unavailable',
     'avisoTvmaze': 'TVMaze is unavailable, showing TMDB data',
     'avisoTmdb': 'TMDB is unavailable, showing TVMaze data',
-    'avisoTmdbKey':
-        'The TMDB API key is missing or incorrect. Set it up on the users screen.',
+    'avisoTmdbKey': 'The TMDB API key is missing or incorrect. Set it up on the users screen.',
 
     // Calendar
     'calendario': 'Calendar',
@@ -390,26 +382,26 @@ const Map<String, Map<String, String>> cadenas = {
     'nombreCambiado': 'Name changed',
     'pinCambiado': 'PIN changed',
     'borrarUsuario': 'Delete user',
-    'borrarUsuarioConfirm':
-        'Delete this user? All their data will be removed.',
+    'borrarUsuarioConfirm': 'Delete this user? All their data will be removed.',
     'creditos': 'Credits',
-    'tmdbAviso':
-        'This product uses the TMDB API but is not endorsed or certified by TMDB.',
+    'tmdbAviso': 'This product uses the TMDB API but is not endorsed or certified by TMDB.',
     'tvmazeCredit': 'Series data provided by TVMaze',
 
     // TMDB API key (set up on the users screen)
     'claveTmdb': 'TMDB API key',
     'claveInsertar': 'Insert your TMDB API key here',
     'claveGuardadaApp': 'Saved in the app',
-    'claveDelEntorno': 'From the .env file',
     'claveComprobando': 'Verifying the key…',
     'claveNoValida': 'The key is not valid, check it',
     'claveVacia': 'Enter a key',
     'modificarClave': 'Change key',
-    'usarClaveEntorno': 'Use the .env one',
     'obtenerClave': 'Get key',
   },
 };
+
+/// Idioma de la app ('es' o 'en') en el formato que piden las APIs
+/// (TMDB): 'es-ES' o 'en-US'. Único sitio con esta regla.
+String idiomaApi(String idioma) => idioma == 'es' ? 'es-ES' : 'en-US';
 
 /// Devuelve el texto de [clave] en el [idioma].
 /// Si falta, usa el español; y si tampoco está, devuelve la propia clave.

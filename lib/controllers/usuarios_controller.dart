@@ -32,8 +32,9 @@ class UsuariosController extends ChangeNotifier {
     _errorCarga = null;
     notifyListeners();
     try {
-      _usuarios =
-          await AlmacenamientoService.cargarUsuarios().timeout(_tiempoMax);
+      _usuarios = await AlmacenamientoService.cargarUsuarios().timeout(
+        _tiempoMax,
+      );
     } catch (e) {
       debugPrint('Error cargando usuarios: $e');
       _usuarios = [];
@@ -50,7 +51,7 @@ class UsuariosController extends ChangeNotifier {
     final nombreLimpio = nombre.trim();
     if (nombreLimpio.isEmpty) return 'nombreRequerido';
     if (pin.length != 4) return 'pin4digitos';
-    if (int.tryParse(pin) == null) return 'pinSoloNumeros';
+    if (!AlmacenamientoService.pinValido(pin)) return 'pinSoloNumeros';
 
     final usuario = UsuarioModel(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -72,7 +73,7 @@ class UsuariosController extends ChangeNotifier {
 
   /// Comprueba si el PIN escrito es el del usuario.
   bool validarPin(UsuarioModel usuario, String pin) {
-    if (pin.length != 4 || int.tryParse(pin) == null) return false;
+    if (!AlmacenamientoService.pinValido(pin)) return false;
     return AlmacenamientoService.hashPin(pin) == usuario.pinHash;
   }
 
@@ -81,17 +82,21 @@ class UsuariosController extends ChangeNotifier {
   /// usuario actualizado, para entrar con él en la sesión (así ningún
   /// guardado posterior se lleva el PIN viejo).
   Future<({String? error, UsuarioModel? usuario})> cambiarPinDeUsuario(
-      UsuarioModel usuario, String pinActual, String pinNuevo) async {
+    UsuarioModel usuario,
+    String pinActual,
+    String pinNuevo,
+  ) async {
     if (!validarPin(usuario, pinActual)) {
       return (error: 'pinIncorrecto', usuario: null);
     }
     if (pinNuevo.length != 4) return (error: 'pin4digitos', usuario: null);
-    if (int.tryParse(pinNuevo) == null) {
+    if (!AlmacenamientoService.pinValido(pinNuevo)) {
       return (error: 'pinSoloNumeros', usuario: null);
     }
 
-    final actualizado =
-        usuario.copyWith(pinHash: AlmacenamientoService.hashPin(pinNuevo));
+    final actualizado = usuario.copyWith(
+      pinHash: AlmacenamientoService.hashPin(pinNuevo),
+    );
     try {
       await AlmacenamientoService.actualizarUsuario(actualizado)
           .timeout(_tiempoMax);
@@ -121,14 +126,8 @@ class UsuariosController extends ChangeNotifier {
   /// true mientras se comprueba una clave contra TMDB.
   bool get comprobandoClave => _comprobandoClave;
 
-  /// true si hay una clave utilizable (guardada en la app o en el .env).
+  /// true si el usuario ya guardó una clave.
   bool get hayClaveTmdb => ClaveService.hayClave;
-
-  /// true si la clave activa está guardada en la app (no en el .env).
-  bool get claveTmdbEnApp => ClaveService.guardadaEnApp;
-
-  /// true si el .env contiene otra clave (para poder volver a ella).
-  bool get hayClaveDelEntorno => ClaveService.hayClaveEnEntorno;
 
   /// Clave enmascarada para mostrar en pantalla (nunca la completa).
   String get claveTmdbEnmascarada => ClaveService.enmascarada;
@@ -150,11 +149,5 @@ class UsuariosController extends ChangeNotifier {
       _comprobandoClave = false;
       notifyListeners();
     }
-  }
-
-  /// Borra la clave guardada en la app y vuelve a la del .env.
-  Future<void> usarClaveDelEntorno() async {
-    await ClaveService.restaurarEntorno();
-    notifyListeners();
   }
 }

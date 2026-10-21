@@ -1,3 +1,5 @@
+import 'serie_model.dart' show TmdbRefs;
+
 /// Persona (actriz/actor, doblador, director...) de TMDB o TVMaze.
 class PersonaModel {
   final int id;
@@ -10,11 +12,7 @@ class PersonaModel {
   final String? fallecimiento; // fecha 'yyyy-MM-dd'
   final String? lugarNacimiento; // solo TMDB
   final String? pais; // solo TVMaze
-  final List<String> tambienConocidoComo; // solo TMDB (also_known_as)
   final String? urlPagina; // ficha pública en la web de la fuente
-
-  // Base para las fotos de perfil de TMDB.
-  static const String _baseImagenes = 'https://image.tmdb.org/t/p/';
 
   const PersonaModel({
     required this.id,
@@ -27,44 +25,8 @@ class PersonaModel {
     this.fallecimiento,
     this.lugarNacimiento,
     this.pais,
-    this.tambienConocidoComo = const [],
     this.urlPagina,
   });
-
-  factory PersonaModel.fromJson(Map<String, dynamic> json) {
-    return PersonaModel(
-      id: json['id'] as int? ?? 0,
-      fuente: json['fuente'] as String? ?? 'tmdb',
-      nombre: json['nombre'] as String? ?? '',
-      fotoUrl: json['fotoUrl'] as String?,
-      departamento: json['departamento'] as String? ?? '',
-      biografia: json['biografia'] as String? ?? '',
-      cumpleanos: json['cumpleanos'] as String?,
-      fallecimiento: json['fallecimiento'] as String?,
-      lugarNacimiento: json['lugarNacimiento'] as String?,
-      pais: json['pais'] as String?,
-      tambienConocidoComo:
-          (json['tambienConocidoComo'] as List<dynamic>? ?? const [])
-              .map((n) => n as String)
-              .toList(),
-      urlPagina: json['urlPagina'] as String?,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'fuente': fuente,
-        'nombre': nombre,
-        'fotoUrl': fotoUrl,
-        'departamento': departamento,
-        'biografia': biografia,
-        'cumpleanos': cumpleanos,
-        'fallecimiento': fallecimiento,
-        'lugarNacimiento': lugarNacimiento,
-        'pais': pais,
-        'tambienConocidoComo': tambienConocidoComo,
-        'urlPagina': urlPagina,
-      };
 
   PersonaModel copyWith({
     int? id,
@@ -77,7 +39,6 @@ class PersonaModel {
     String? fallecimiento,
     String? lugarNacimiento,
     String? pais,
-    List<String>? tambienConocidoComo,
     String? urlPagina,
   }) {
     return PersonaModel(
@@ -91,7 +52,6 @@ class PersonaModel {
       fallecimiento: fallecimiento ?? this.fallecimiento,
       lugarNacimiento: lugarNacimiento ?? this.lugarNacimiento,
       pais: pais ?? this.pais,
-      tambienConocidoComo: tambienConocidoComo ?? this.tambienConocidoComo,
       urlPagina: urlPagina ?? this.urlPagina,
     );
   }
@@ -103,7 +63,7 @@ class PersonaModel {
       id: json['id'] as int? ?? 0,
       fuente: 'tmdb',
       nombre: json['name'] as String? ?? '',
-      fotoUrl: ruta == null ? null : '$_baseImagenes/w500$ruta',
+      fotoUrl: TmdbRefs.urlImagen(ruta),
       departamento: json['known_for_department'] as String? ?? '',
     );
   }
@@ -115,16 +75,12 @@ class PersonaModel {
       id: json['id'] as int? ?? 0,
       fuente: 'tmdb',
       nombre: json['name'] as String? ?? '',
-      fotoUrl: ruta == null ? null : '$_baseImagenes/w500$ruta',
+      fotoUrl: TmdbRefs.urlImagen(ruta),
       departamento: json['known_for_department'] as String? ?? '',
       biografia: json['biography'] as String? ?? '',
       cumpleanos: _vacioANull(json['birthday'] as String?),
       fallecimiento: _vacioANull(json['deathday'] as String?),
       lugarNacimiento: _vacioANull(json['place_of_birth'] as String?),
-      tambienConocidoComo:
-          (json['also_known_as'] as List<dynamic>? ?? const [])
-              .map((n) => n as String)
-              .toList(),
     );
   }
 
@@ -162,11 +118,7 @@ class CreditoPersonaModel {
   final String fecha; // 'yyyy-MM-dd' o '' si se desconoce
   final String? posterUrl;
   final String personaje; // '' si la fuente no lo indica
-  final double popularidad; // solo TMDB; ordena el "conocido por"
   final double puntuacion; // de 0 a 10
-
-  // Base para las imágenes de TMDB.
-  static const String _baseImagenes = 'https://image.tmdb.org/t/p/';
 
   const CreditoPersonaModel({
     required this.id,
@@ -176,39 +128,12 @@ class CreditoPersonaModel {
     this.fecha = '',
     this.posterUrl,
     this.personaje = '',
-    this.popularidad = 0,
     this.puntuacion = 0,
   });
 
   /// Año de la obra (null si no hay fecha).
   int? get anio =>
       fecha.length >= 4 ? int.tryParse(fecha.substring(0, 4)) : null;
-
-  factory CreditoPersonaModel.fromJson(Map<String, dynamic> json) {
-    return CreditoPersonaModel(
-      id: json['id'] as int? ?? 0,
-      fuente: json['fuente'] as String? ?? 'tmdb',
-      tipo: json['tipo'] as String? ?? 'serie',
-      titulo: json['titulo'] as String? ?? '',
-      fecha: json['fecha'] as String? ?? '',
-      posterUrl: json['posterUrl'] as String?,
-      personaje: json['personaje'] as String? ?? '',
-      popularidad: (json['popularidad'] as num?)?.toDouble() ?? 0,
-      puntuacion: (json['puntuacion'] as num?)?.toDouble() ?? 0,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'fuente': fuente,
-        'tipo': tipo,
-        'titulo': titulo,
-        'fecha': fecha,
-        'posterUrl': posterUrl,
-        'personaje': personaje,
-        'popularidad': popularidad,
-        'puntuacion': puntuacion,
-      };
 
   /// Crédito de TMDB (/person/{id}/combined_credits): película o serie
   /// según 'media_type', con personaje, fecha y puntuación.
@@ -223,9 +148,8 @@ class CreditoPersonaModel {
       fecha: (esSerie ? json['first_air_date'] : json['release_date'])
               as String? ??
           '',
-      posterUrl: ruta == null ? null : '$_baseImagenes/w342$ruta',
+      posterUrl: TmdbRefs.urlImagen(ruta, tamano: 'w342'),
       personaje: json['character'] as String? ?? '',
-      popularidad: (json['popularity'] as num?)?.toDouble() ?? 0,
       puntuacion: (json['vote_average'] as num?)?.toDouble() ?? 0,
     );
   }
@@ -246,7 +170,6 @@ class CreditoPersonaModel {
           ? (imagen['medium'] as String? ?? imagen['original'] as String?)
           : null,
       personaje: personaje,
-      popularidad: 0,
       puntuacion: rating is Map<String, dynamic>
           ? ((rating['average'] as num?)?.toDouble() ?? 0)
           : 0,

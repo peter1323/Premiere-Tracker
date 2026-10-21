@@ -7,7 +7,6 @@ class MangaModel {
   final int id;
   final String titulo; // romaji (título original japonés)
   final String? tituloEnglish;
-  final String? tituloNative;
   final String sinopsis;
   final String estado;
   final int? capitulos;
@@ -25,7 +24,6 @@ class MangaModel {
     required this.id,
     required this.titulo,
     this.tituloEnglish,
-    this.tituloNative,
     required this.sinopsis,
     required this.estado,
     this.capitulos,
@@ -61,7 +59,6 @@ class MangaModel {
       id: json['id'] as int,
       titulo: titulo,
       tituloEnglish: json['title']?['english'] as String?,
-      tituloNative: json['title']?['native'] as String?,
       sinopsis: sinopsis,
       estado: _estadoDesdeAniList(json['status'] as String?),
       capitulos: json['chapters'] as int?,
@@ -120,22 +117,4 @@ class MangaModel {
     return '$anio-$mes-$dia';
   }
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'titulo': titulo,
-        'tituloEnglish': tituloEnglish,
-        'tituloNative': tituloNative,
-        'sinopsis': sinopsis,
-        'estado': estado,
-        'capitulos': capitulos,
-        'tomos': tomos,
-        'puntuacion': puntuacion,
-        'formato': formato,
-        'pais': pais,
-        'generos': generos,
-        'autores': autores,
-        'fechaInicio': fechaInicio,
-        'portada': portada,
-        'url': url,
-      };
 }

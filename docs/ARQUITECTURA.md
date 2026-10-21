@@ -99,8 +99,8 @@ Hay dos tipos de controladores según su duración:
 | 0 | Inicio | `inicio_view` | `inicio_controller` | Buscador general (TMDB + TVMaze + AniList). |
 | 1 | Lectura | `mangas_view` | `mangas_controller` | Busca mangas/manhwas/novelas (AniList). |
 | 2 | Calendario | `calendario_view` | `calendario_controller` | Estrenos por día/semana/mes (solo series y películas). |
-| 3 | Favoritos | `favoritos_view` | `favoritos_controller` | Lo guardado, con filtro Todo/Series/Películas/Manga/Novelas. |
-| 4 | Vistos | `vistos_view` | `vistos_controller` | Lo ya visto/leído, con los mismos filtros. |
+| 3 | Favoritos | `lista_guardada_view` | `lista_guardada_controller` | Lo guardado, con filtro Todo/Series/Películas/Manga/Novelas. |
+| 4 | Vistos | `lista_guardada_view` | `lista_guardada_controller` | Lo ya visto/leído, con los mismos filtros. |
 | 5 | Notas | `notas_view` | `notas_controller` | Notas personales. |
 | 6 | Ajustes | `ajustes_view` | `ajustes_controller` | Idioma, tema, copia de seguridad, gestión de usuarios. |
 
@@ -112,12 +112,12 @@ Antes de entrar a la app está la **pantalla de usuarios** (`usuarios_view` +
 ## 5. De dónde vienen los datos (las APIs)
 
 Cada tipo de contenido usa su fuente. **AniList y MangaDex son públicas y no
-necesitan clave; TMDB sí necesita una clave (en `.env` o guardada en la app
+necesitan clave; TMDB sí necesita una clave (guardada en la app
 desde la pantalla de usuarios); TVMaze no.**
 
 | Fuente | Para qué | ¿Clave? |
 |--------|----------|---------|
-| **TMDB** (`tmdb_service`) | Series, películas, personas, reparto, episodios. Fuente principal. | Sí, en `.env` o guardada en la app (`clave_service`) |
+| **TMDB** (`tmdb_service`) | Series, películas, personas, reparto, episodios. Fuente principal. | Sí, guardada en la app (`clave_service`) |
 | **TVMaze** (`tvmaze_service`) | Series alternativas (en inglés) y episodios. Tiene límite de peticiones. | No |
 | **AniList** (`anilist_service`) | Mangas, manhwas, manhuas y novelas (GraphQL). | No |
 | **MangaDex** (`mangadex_service`) | Último capítulo por idioma y sinopsis en español de los mangas. | No |
@@ -139,9 +139,9 @@ Dos servicios auxiliares componen los anteriores:
   repetir peticiones.
 - **Límites de peticiones**: TVMaze (20 cada 10 s) y MangaDex (4 por segundo)
   respetan su cuota con un control de ventana; se espera si hace falta.
-- **La clave de TMDB va SOLO en `.env`** (se lee con `flutter_dotenv`). El
-  archivo `.env` está en `.gitignore` y **nunca** debe abrirse, mostrarse ni
-  subirse. Si falta, la app arranca igualmente y muestra un aviso.
+- **La clave de TMDB la escribe cada usuario en la app** (pantalla de
+  usuarios) y se guarda en el dispositivo; nunca va en el código ni se
+  muestra completa. Si falta, la app arranca igualmente y muestra un aviso.
 
 ---
 
@@ -190,13 +190,11 @@ vistos y notas.
 
 - Comentarios y resúmenes **en español** y breves.
 - Textos de usuario **solo** en `app_strings.dart` (nada hardcodeado en vistas).
-- La clave de TMDB **solo** en `.env`, nunca en el código.
+- La clave de TMDB nunca en el código: la guarda cada usuario en la app.
 - El **calendario es solo para series y películas** (no se toca para mangas).
 - Forma de verificar que todo va bien:
-  `flutter analyze; if ($?) { flutter test }; if ($?) { flutter build windows --release }`
+  `flutter analyze; if ($?) { flutter test }; if ($?) { flutter test integration_test/recorrido_app_test.dart -d windows }`
   (debe terminar sin errores).
-- Commits: revisar antes `git check-ignore .env` y `git status` (el `.env` jamás
-  debe aparecer).
 
 ---
 

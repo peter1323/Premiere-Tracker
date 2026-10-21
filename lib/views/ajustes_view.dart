@@ -200,8 +200,8 @@ class _CuerpoAjustes extends StatelessWidget {
   ) async {
     final resultado = await control.importarFavoritos();
     if (!context.mounted) return;
-    if (resultado.clave.isEmpty) return; // cancelado
-    _aviso(context, t(resultado.clave, idioma));
+    if (resultado.isEmpty) return; // cancelado
+    _aviso(context, t(resultado, idioma));
   }
 
   // ===== Gestión de usuarios =====
@@ -396,6 +396,8 @@ class _DialogoNombreState extends State<_DialogoNombre> {
   Widget build(BuildContext context) {
     final idioma = widget.idioma;
     return AlertDialog(
+      // Con el móvil en horizontal y el teclado abierto no cabe: se desliza
+      scrollable: true,
       title: Text(t('cambiarNombre', idioma)),
       content: SizedBox(
         width: 300,
@@ -464,6 +466,8 @@ class _DialogoCambiarPinState extends State<_DialogoCambiarPin> {
   Widget build(BuildContext context) {
     final idioma = widget.idioma;
     return AlertDialog(
+      // Con el móvil en horizontal y el teclado abierto no cabe: se desliza
+      scrollable: true,
       title: Text(t('cambiarPin', idioma)),
       content: SizedBox(
         width: 300,

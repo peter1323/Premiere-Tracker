@@ -1,7 +1,6 @@
 // MODELO de una película (sus datos vienen de TMDB). Solo guarda campos
 // y sabe convertir la respuesta JSON de TMDB a objeto (fromTmdb) y de
-// objeto a JSON (toJson) para poder guardarlo en la copia de seguridad.
-// No hace llamadas de red ni lógica de interfaz.
+// objeto. No hace llamadas de red ni lógica de interfaz.
 import 'reparto_model.dart';
 import 'serie_model.dart' show TmdbRefs;
 
@@ -41,36 +40,6 @@ class PeliculaModel {
   int? get anio => fechaEstreno.length >= 4
       ? int.tryParse(fechaEstreno.substring(0, 4))
       : null;
-
-  factory PeliculaModel.fromJson(Map<String, dynamic> json) {
-    return PeliculaModel(
-      id: json['id'] as int,
-      fuente: json['fuente'] as String? ?? 'tmdb',
-      titulo: json['titulo'] as String? ?? '',
-      sinopsis: json['sinopsis'] as String? ?? '',
-      fechaEstreno: json['fechaEstreno'] as String? ?? '',
-      estado: json['estado'] as String? ?? estadoDesconocida,
-      posterUrl: json['posterUrl'] as String?,
-      puntuacion: (json['puntuacion'] as num?)?.toDouble(),
-      generos: (json['generos'] as List<dynamic>? ?? const []).cast<String>(),
-      reparto: (json['reparto'] as List<dynamic>? ?? [])
-          .map((r) => RepartoModel.fromJson(r as Map<String, dynamic>))
-          .toList(),
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'fuente': fuente,
-        'titulo': titulo,
-        'sinopsis': sinopsis,
-        'fechaEstreno': fechaEstreno,
-        'estado': estado,
-        'posterUrl': posterUrl,
-        'puntuacion': puntuacion,
-        'generos': generos,
-        'reparto': reparto.map((r) => r.toJson()).toList(),
-      };
 
   /// Película a partir de un resultado de búsqueda de TMDB (/search/movie).
   factory PeliculaModel.fromTmdbBusqueda(Map<String, dynamic> json) {

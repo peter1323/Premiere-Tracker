@@ -5,6 +5,7 @@
 // así que no se destruye al cambiar de sección.
 import 'package:flutter/foundation.dart';
 
+import '../l10n/app_strings.dart';
 import '../models/pelicula_model.dart';
 import '../models/persona_model.dart';
 import '../models/serie_model.dart';
@@ -65,7 +66,7 @@ class InicioController extends ChangeNotifier {
     notifyListeners();
 
     // TMDB usa es-ES o en-US según el idioma de la app
-    final language = idioma == 'es' ? 'es-ES' : 'en-US';
+    final language = idiomaApi(idioma);
     _resultado = await BusquedaService.buscar(consulta, language);
 
     // Si la fuente seleccionada no está disponible, se usa la otra

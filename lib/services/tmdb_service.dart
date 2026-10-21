@@ -1,6 +1,6 @@
 // SERVICIO de TMDB: la API de películas y series (la fuente principal de
 // la app). Es la ÚNICA que necesita API key, y esa clave la aporta
-// ClaveService (guardada en la app o leída del archivo .env; nunca va
+// ClaveService (la guarda el usuario en la app; nunca va
 // escrita en el código). Sirve para buscar y cargar series, películas,
 // personas, reparto y episodios. Cada petición lleva timeout; si la
 // clave falta o está mal lanza TmdbException con la marca
@@ -29,7 +29,7 @@ class TmdbService {
   static const String _base = 'https://api.themoviedb.org/3';
   static const Duration _timeout = Duration(seconds: 10);
 
-  /// true si la clave no está o sigue con el texto de ejemplo del .env.
+  /// true si el usuario aún no ha guardado su clave.
   static bool get claveFaltante => !ClaveService.hayClave;
 
   /// Petición GET genérica con timeout de 10 segundos.
@@ -40,16 +40,18 @@ class TmdbService {
     if (claveFaltante) {
       throw TmdbException('Falta la API key de TMDB', claveIncorrecta: true);
     }
-    final uri = Uri.parse('$_base$ruta').replace(
-      queryParameters: {...ClaveService.parametrosAuth, ...parametros},
-    );
+    final uri = Uri.parse(
+      '$_base$ruta',
+    ).replace(queryParameters: {...ClaveService.parametrosAuth, ...parametros});
     try {
       final respuesta = await http
           .get(uri, headers: ClaveService.cabeceras)
           .timeout(_timeout);
       if (respuesta.statusCode == 401 || respuesta.statusCode == 403) {
-        throw TmdbException('La API key de TMDB no es válida',
-            claveIncorrecta: true);
+        throw TmdbException(
+          'La API key de TMDB no es válida',
+          claveIncorrecta: true,
+        );
       }
       if (respuesta.statusCode != 200) {
         throw TmdbException('TMDB devolvió el código ${respuesta.statusCode}');
@@ -64,9 +66,13 @@ class TmdbService {
 
   /// Busca series en TMDB (/search/tv).
   static Future<List<SerieModel>> buscarSeries(
-      String consulta, String language) async {
-    final json = await _get('/search/tv',
-        parametros: {'query': consulta, 'language': language});
+    String consulta,
+    String language,
+  ) async {
+    final json = await _get(
+      '/search/tv',
+      parametros: {'query': consulta, 'language': language},
+    );
     final resultados = json['results'] as List<dynamic>? ?? [];
     return resultados
         .map((r) => SerieModel.fromTmdbBusqueda(r as Map<String, dynamic>))
@@ -75,9 +81,13 @@ class TmdbService {
 
   /// Busca películas en TMDB (/search/movie).
   static Future<List<PeliculaModel>> buscarPeliculas(
-      String consulta, String language) async {
-    final json = await _get('/search/movie',
-        parametros: {'query': consulta, 'language': language});
+    String consulta,
+    String language,
+  ) async {
+    final json = await _get(
+      '/search/movie',
+      parametros: {'query': consulta, 'language': language},
+    );
     final resultados = json['results'] as List<dynamic>? ?? [];
     return resultados
         .map((r) => PeliculaModel.fromTmdbBusqueda(r as Map<String, dynamic>))
@@ -86,9 +96,13 @@ class TmdbService {
 
   /// Busca personas (actores, directores...) en TMDB (/search/person).
   static Future<List<PersonaModel>> buscarPersonas(
-      String consulta, String language) async {
-    final json = await _get('/search/person',
-        parametros: {'query': consulta, 'language': language});
+    String consulta,
+    String language,
+  ) async {
+    final json = await _get(
+      '/search/person',
+      parametros: {'query': consulta, 'language': language},
+    );
     final resultados = json['results'] as List<dynamic>? ?? [];
     return resultados
         .map((r) => PersonaModel.fromTmdbBusqueda(r as Map<String, dynamic>))
@@ -98,10 +112,10 @@ class TmdbService {
   /// Ficha de una persona (/person/{id}): biografía, nacimiento,
   /// lugar y también el IMDb anexado (external_ids) como puente.
   static Future<PersonaModel> obtenerPersona(int id, String language) async {
-    final json = await _get('/person/$id', parametros: {
-      'language': language,
-      'append_to_response': 'external_ids',
-    });
+    final json = await _get(
+      '/person/$id',
+      parametros: {'language': language, 'append_to_response': 'external_ids'},
+    );
     return PersonaModel.fromTmdbDetalle(json);
   }
 
@@ -109,9 +123,13 @@ class TmdbService {
   /// series y películas mezcladas, con personaje y puntuación.
   /// Se ordena por fecha (más reciente primero) y se limita a 40.
   static Future<List<CreditoPersonaModel>> obtenerCreditosPersona(
-      int id, String language) async {
-    final json = await _get('/person/$id/combined_credits',
-        parametros: {'language': language});
+    int id,
+    String language,
+  ) async {
+    final json = await _get(
+      '/person/$id/combined_credits',
+      parametros: {'language': language},
+    );
     final cast = json['cast'] as List<dynamic>? ?? [];
     final creditos = cast
         .map((c) => CreditoPersonaModel.fromTmdb(c as Map<String, dynamic>))
@@ -125,8 +143,11 @@ class TmdbService {
   /// El reparto completo se pide aparte: aggregate_credits trae a todos
   /// los actores de todas las temporadas, y credits solo a los habituales.
   /// [conReparto] false: solo los datos básicos (más ligero, p. ej. calendario).
-  static Future<SerieModel> obtenerSerie(int id, String language,
-      {bool conReparto = true}) async {
+  static Future<SerieModel> obtenerSerie(
+    int id,
+    String language, {
+    bool conReparto = true,
+  }) async {
     final parametros = <String, String>{'language': language};
     if (conReparto) parametros['append_to_response'] = 'credits';
     final json = await _get('/tv/$id', parametros: parametros);
@@ -134,7 +155,7 @@ class TmdbService {
     if (!conReparto) return serie;
     try {
       final agregado = await _get('/tv/$id/aggregate_credits');
-      final reparto = TmdbRefs.repartoDeCreditosAgregados(agregado);
+      final reparto = TmdbRefs.repartoDeCredits(agregado, agregado: true);
       if (reparto.isNotEmpty) {
         return serie.copyWith(reparto: reparto);
       }
@@ -146,9 +167,14 @@ class TmdbService {
 
   /// Episodios de una temporada (/tv/{id}/season/{n}).
   static Future<List<EpisodioModel>> obtenerEpisodiosTemporada(
-      int id, int temporada, String language) async {
-    final json =
-        await _get('/tv/$id/season/$temporada', parametros: {'language': language});
+    int id,
+    int temporada,
+    String language,
+  ) async {
+    final json = await _get(
+      '/tv/$id/season/$temporada',
+      parametros: {'language': language},
+    );
     final episodios = json['episodes'] as List<dynamic>? ?? [];
     return episodios.map((e) {
       final m = e as Map<String, dynamic>;
@@ -161,18 +187,26 @@ class TmdbService {
     }).toList();
   }
 
+  // Caché de IDs de IMDb: el calendario lo pide para cada serie favorita
+  // cada vez que cambia de periodo, y nunca cambia.
+  static final Map<int, String?> _cacheImdb = {};
+
   /// ID de IMDb de una serie (/tv/{id}/external_ids): puente con TVMaze.
   static Future<String?> obtenerImdbId(int id) async {
+    if (_cacheImdb.containsKey(id)) return _cacheImdb[id];
     final json = await _get('/tv/$id/external_ids');
     final imdb = (json['imdb_id'] as String?) ?? '';
-    return imdb.isEmpty ? null : imdb;
+    return _cacheImdb[id] = imdb.isEmpty ? null : imdb;
   }
 
   /// Detalle de una película (/movie/{id}) con puntuación, géneros
   /// y reparto (credits en la misma respuesta).
   /// [conCreditos] false: solo los datos básicos (más ligero).
-  static Future<PeliculaModel> obtenerPelicula(int id, String language,
-      {bool conCreditos = true}) async {
+  static Future<PeliculaModel> obtenerPelicula(
+    int id,
+    String language, {
+    bool conCreditos = true,
+  }) async {
     final parametros = <String, String>{
       'language': language,
       if (conCreditos) 'append_to_response': 'credits',

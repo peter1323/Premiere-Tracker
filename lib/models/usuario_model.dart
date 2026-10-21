@@ -21,7 +21,7 @@ class UsuarioModel {
     required this.id,
     required this.nombre,
     required this.pinHash,
-    this.tema = 'claro',
+    this.tema = 'oscuro', // usuarios nuevos: oscuro por defecto
     this.idioma = 'es',
     this.favoritos = const [],
     this.vistos = const [],

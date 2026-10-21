@@ -14,21 +14,4 @@ class RepartoModel {
     this.fuente,
   });
 
-  factory RepartoModel.fromJson(Map<String, dynamic> json) {
-    return RepartoModel(
-      nombre: json['nombre'] as String? ?? '',
-      personaje: json['personaje'] as String? ?? '',
-      fotoUrl: json['fotoUrl'] as String?,
-      idPersona: json['idPersona'] as int?,
-      fuente: json['fuente'] as String?,
-    );
-  }
-
-  Map<String, dynamic> toJson() => {
-        'nombre': nombre,
-        'personaje': personaje,
-        'fotoUrl': fotoUrl,
-        'idPersona': idPersona,
-        'fuente': fuente,
-      };
 }

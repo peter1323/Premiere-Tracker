@@ -42,7 +42,8 @@ class AnilistService {
         coverImage { large extraLarge }
   ''';
 
-  static final String _consulta = '''
+  static final String _consulta =
+      '''
   query (\$search: String, \$format_in: [MediaFormat]) {
     Page(page: 1, perPage: 20) {
       media(type: MANGA, search: \$search, format_in: \$format_in, sort: SEARCH_MATCH) {
@@ -53,13 +54,33 @@ $_campos
   ''';
 
   // Ficha completa por id: para abrir un manga desde Favoritos o Vistos.
-  static final String _consultaPorId = '''
+  static final String _consultaPorId =
+      '''
   query (\$id: Int) {
     Media(id: \$id, type: MANGA) {
 $_campos
     }
   }
   ''';
+
+  /// Envía una consulta GraphQL a AniList y devuelve su JSON.
+  /// Lanza excepción si no hay conexión o AniList no responde 200.
+  static Future<Map<String, dynamic>> _post(
+    String consulta,
+    Map<String, dynamic> variables,
+  ) async {
+    final respuesta = await http
+        .post(
+          Uri.parse(_base),
+          headers: const {'Content-Type': 'application/json'},
+          body: jsonEncode({'query': consulta, 'variables': variables}),
+        )
+        .timeout(_timeout);
+    if (respuesta.statusCode != 200) {
+      throw Exception('AniList no responde');
+    }
+    return jsonDecode(respuesta.body) as Map<String, dynamic>;
+  }
 
   /// Busca cómics o novelas por nombre. En AniList manga, manhwa, manhua y
   /// novelas son todos type: MANGA y lo que los separa es el formato, así
@@ -77,21 +98,10 @@ $_campos
     final guardado = _cache[clave];
     if (guardado != null) return guardado;
 
-    final respuesta = await http
-        .post(
-          Uri.parse(_base),
-          headers: const {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'query': _consulta,
-            'variables': {'search': busqueda, 'format_in': formatos},
-          }),
-        )
-        .timeout(_timeout);
-
-    if (respuesta.statusCode != 200) {
-      throw Exception('AniList no responde');
-    }
-    final datos = jsonDecode(respuesta.body) as Map<String, dynamic>;
+    final datos = await _post(_consulta, {
+      'search': busqueda,
+      'format_in': formatos,
+    });
     final lista = datos['data']?['Page']?['media'] as List?;
     if (lista == null) {
       // Si GraphQL devuelve errores (p. ej. consulta rechazada).
@@ -109,21 +119,7 @@ $_campos
   /// guardado en favoritos o vistos sin buscarlo por nombre).
   /// Lanza excepción si no se encuentra o no hay conexión.
   static Future<MangaModel> cargarManga(int id) async {
-    final respuesta = await http
-        .post(
-          Uri.parse(_base),
-          headers: const {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'query': _consultaPorId,
-            'variables': {'id': id},
-          }),
-        )
-        .timeout(_timeout);
-
-    if (respuesta.statusCode != 200) {
-      throw Exception('AniList no responde');
-    }
-    final datos = jsonDecode(respuesta.body) as Map<String, dynamic>;
+    final datos = await _post(_consultaPorId, {'id': id});
     final media = datos['data']?['Media'];
     if (media == null) {
       throw Exception('Manga no encontrado en AniList');

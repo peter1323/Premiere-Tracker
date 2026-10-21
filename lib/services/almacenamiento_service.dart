@@ -20,7 +20,7 @@ class AlmacenamientoService {
   /// usuario. Se aplica en la pantalla de usuarios (sin sesión iniciada).
   static Future<String> cargarTemaGlobal() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_claveTemaGlobal) ?? 'claro';
+    return prefs.getString(_claveTemaGlobal) ?? 'oscuro'; // primera vez: oscuro
   }
 
   /// Guarda el tema global para la próxima arrancada.
@@ -62,25 +62,26 @@ class AlmacenamientoService {
   }
 
   /// Carga todos los usuarios guardados.
+  /// Si los datos guardados están corruptos LANZA el error en lugar de
+  /// devolver una lista vacía: con una lista vacía, el siguiente guardado
+  /// (p. ej. crear un usuario) sobrescribiría a todos los demás usuarios.
   static Future<List<UsuarioModel>> cargarUsuarios() async {
     final prefs = await SharedPreferences.getInstance();
     final texto = prefs.getString(_claveUsuarios);
     if (texto == null || texto.isEmpty) return [];
-    try {
-      final lista = jsonDecode(texto) as List<dynamic>;
-      return lista
-          .map((u) => UsuarioModel.fromJson(u as Map<String, dynamic>))
-          .toList();
-    } catch (_) {
-      return []; // archivo local corrupto: se empieza de cero
-    }
+    final lista = jsonDecode(texto) as List<dynamic>;
+    return lista
+        .map((u) => UsuarioModel.fromJson(u as Map<String, dynamic>))
+        .toList();
   }
+
+  /// true si el PIN son exactamente 4 dígitos (rechaza '+123', '-123'...).
+  static bool pinValido(String pin) => RegExp(r'^\d{4}$').hasMatch(pin);
 
   /// Guarda la lista completa de usuarios.
   static Future<void> _guardarLista(List<UsuarioModel> usuarios) async {
     final prefs = await SharedPreferences.getInstance();
-    final texto =
-        jsonEncode(usuarios.map((u) => u.toJson()).toList());
+    final texto = jsonEncode(usuarios.map((u) => u.toJson()).toList());
     await prefs.setString(_claveUsuarios, texto);
   }
 
@@ -105,8 +106,8 @@ class AlmacenamientoService {
 
   /// Borra un usuario por su id.
   static Future<void> eliminarUsuario(String id) => _serializar(() async {
-        final usuarios = await cargarUsuarios();
-        usuarios.removeWhere((u) => u.id == id);
-        await _guardarLista(usuarios);
-      });
+    final usuarios = await cargarUsuarios();
+    usuarios.removeWhere((u) => u.id == id);
+    await _guardarLista(usuarios);
+  });
 }
