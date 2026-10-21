@@ -239,50 +239,57 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
       const SizedBox(height: 6),
     ];
 
-    // Vista del calendario (día, semana o mes)
-    final contenido = Stack(
-      children: [
-        _vista(),
-        if (widget.cargando)
-          const Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: LinearProgressIndicator(minHeight: 3),
-          ),
-        if (!widget.cargando && !hayEntradas && widget.modo != 'anio')
-          IgnorePointer(
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: esquema.surfaceContainerHighest.withValues(
-                    alpha: 0.92,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(t('noHayEstrenos', widget.idioma)),
-              ),
-            ),
-          ),
-      ],
-    );
-
     // En alturas bajas (móvil horizontal) la página entera se desplaza y
     // la vista del calendario queda con una altura mínima para seguir
     // utilizable; en alturas normales ocupa el resto (igual que siempre).
+    // El contenido se construye dentro porque en Año necesita saber si
+    // la página scrollea (su rejilla entonces no lleva scroll propio).
     return LayoutBuilder(
       builder: (context, medidas) {
-        if (medidas.maxHeight < 360) {
+        final paginaScrollea = medidas.maxHeight < 360;
+        // Vista del calendario (día, semana, mes o año)
+        final contenido = Stack(
+          children: [
+            _vista(paginaScrollea: paginaScrollea),
+            if (widget.cargando)
+              const Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: LinearProgressIndicator(minHeight: 3),
+              ),
+            if (!widget.cargando && !hayEntradas && widget.modo != 'anio')
+              IgnorePointer(
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: esquema.surfaceContainerHighest.withValues(
+                        alpha: 0.92,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(t('noHayEstrenos', widget.idioma)),
+                  ),
+                ),
+              ),
+          ],
+        );
+        if (paginaScrollea) {
           return SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ...cabecera,
-                SizedBox(height: 340, child: contenido),
+                // El Año lleva su altura natural: su rejilla no scrollea
+                // sola y la página se encarga de subir y bajar.
+                if (widget.modo == 'anio')
+                  contenido
+                else
+                  SizedBox(height: 340, child: contenido),
               ],
             ),
           );
@@ -299,7 +306,9 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
   }
 
   /// Construye la vista del paquete según el modo activo.
-  Widget _vista() {
+  /// [paginaScrollea] indica si la página entera se desplaza (móvil
+  /// horizontal); solo lo usa la vista de año.
+  Widget _vista({required bool paginaScrollea}) {
     switch (widget.modo) {
       case 'dia':
         // LayoutBuilder: la densidad se calcula para que las 24 horas
@@ -312,7 +321,11 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
               initialDay: widget.fechaVisible,
               minDay: _limiteInferior,
               maxDay: _limiteSuperior,
-              heightPerMinute: _densidad(caja.maxHeight),
+              heightPerMinute: _densidad(caja.maxHeight, _altoCabeceraDia),
+              // Sin scroll interno: las 24 h ya caben exactas y así el
+              // deslizamiento vertical mueve la página (la cabecera de la
+              // app nunca queda inaccesible).
+              scrollPhysics: const NeverScrollableScrollPhysics(),
               onPageChange: (fecha, pagina) => widget.onFecha(fecha),
               onEventTap: _abrirEventos,
               eventTileBuilder: _tileHora,
@@ -332,7 +345,7 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
       case 'anio':
         // Vista de año propia: los 12 meses con el número de estrenos de
         // cada uno; al pulsar un mes se entra en su vista de mes.
-        return _vistaAnio();
+        return _vistaAnio(paginaScrollea: paginaScrollea);
       case 'semana':
       default:
         return LayoutBuilder(
@@ -343,7 +356,10 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
               initialDay: widget.fechaVisible,
               minDay: _limiteInferior,
               maxDay: _limiteSuperior,
-              heightPerMinute: _densidad(caja.maxHeight),
+              heightPerMinute: _densidad(caja.maxHeight, _altoCabeceraSemana),
+              // Igual que en Día: sin scroll interno para que la página
+              // siempre pueda subir hasta la cabecera de la app.
+              scrollPhysics: const NeverScrollableScrollPhysics(),
               onPageChange: (fecha, pagina) => widget.onFecha(fecha),
               onEventTap: _abrirEventos,
               eventTileBuilder: _tileHora,
@@ -359,11 +375,19 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
     }
   }
 
+  // Alturas fijas de la cabecera interna de calendar_view 2.0.0 (la barra
+  // morada con las flechas mide 48 px; la semana añade la fila de días de
+  // la semana, de 50 + divisor y borde). Se descuentan del alto para que
+  // las 24 horas quepan exactas y no sobre scroll interno.
+  static const double _altoCabeceraDia = 48;
+  static const double _altoCabeceraSemana = 101;
+
   /// Densidad de píxeles por minuto para que las 24 horas (1440 min)
   /// llenen el alto disponible sin scroll ni huecos.
-  double _densidad(double alto) {
-    if (!alto.isFinite || alto <= 0) return 0.4;
-    return alto / 1440;
+  double _densidad(double alto, double ocupado) {
+    final horas = alto - ocupado;
+    if (!horas.isFinite || horas <= 0) return 0.4;
+    return horas / 1440;
   }
 
   /// Convierte los datos del controlador en eventos del paquete.
@@ -592,7 +616,7 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
   /// Vista de año: los 12 meses con su número de estrenos; el mes
   /// actual se resalta con un borde y al pulsar un mes se entra en su
   /// vista de mes. Las flechas cambian de año dentro del rango.
-  Widget _vistaAnio() {
+  Widget _vistaAnio({required bool paginaScrollea}) {
     final esquema = Theme.of(context).colorScheme;
     final anio = widget.fechaVisible.year;
     final hoy = DateTime.now();
@@ -601,6 +625,40 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
     final entradas = widget.pestana == 'series'
         ? widget.seriesPorDia
         : widget.peliculasPorDia;
+
+    // Rejilla con los 12 meses del año
+    final rejilla = LayoutBuilder(
+      builder: (context, caja) {
+        // En móvil vertical, 2 columnas para que cada mes quepa
+        // completo (nombre y estrenos sin solaparse); en pantallas
+        // más anchas, igual que siempre.
+        final estrecho = caja.maxWidth < 600;
+        final columnas = estrecho
+            ? 2
+            : (caja.maxWidth / 220).floor().clamp(3, 6);
+        return GridView.builder(
+          padding: const EdgeInsets.all(12),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columnas,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: estrecho ? 2.2 : 2.8,
+          ),
+          // En móvil horizontal la página scrollea: la rejilla no debe
+          // tener scroll propio (igual que la vista de mes) para no
+          // robar los gestos y dejar la cabecera inaccesible.
+          physics: paginaScrollea ? const NeverScrollableScrollPhysics() : null,
+          shrinkWrap: paginaScrollea,
+          itemCount: 12,
+          itemBuilder: (context, indice) {
+            final mes = indice + 1;
+            final esMesActual = anio == hoy.year && mes == hoy.month;
+            final total = _estrenosDelMes(entradas, anio, mes);
+            return _tarjetaMesAnio(mes, total, esMesActual, esquema);
+          },
+        );
+      },
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -635,36 +693,9 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
             ],
           ),
         ),
-        // Cuadrícula con los 12 meses del año
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, caja) {
-              // En móvil vertical, 2 columnas para que cada mes quepa
-              // completo (nombre y estrenos sin solaparse); en pantallas
-              // más anchas, igual que siempre.
-              final estrecho = caja.maxWidth < 600;
-              final columnas = estrecho
-                  ? 2
-                  : (caja.maxWidth / 220).floor().clamp(3, 6);
-              return GridView.builder(
-                padding: const EdgeInsets.all(12),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: columnas,
-                  mainAxisSpacing: 10,
-                  crossAxisSpacing: 10,
-                  childAspectRatio: estrecho ? 2.2 : 2.8,
-                ),
-                itemCount: 12,
-                itemBuilder: (context, indice) {
-                  final mes = indice + 1;
-                  final esMesActual = anio == hoy.year && mes == hoy.month;
-                  final total = _estrenosDelMes(entradas, anio, mes);
-                  return _tarjetaMesAnio(mes, total, esMesActual, esquema);
-                },
-              );
-            },
-          ),
-        ),
+        // Con página scrolleable la rejilla lleva su altura natural
+        // (la página hace de scroll); si no, ocupa el resto.
+        if (paginaScrollea) rejilla else Expanded(child: rejilla),
       ],
     );
   }
