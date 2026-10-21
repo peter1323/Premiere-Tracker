@@ -13,6 +13,7 @@ import '../models/episodio_model.dart';
 import '../models/pelicula_model.dart';
 import '../models/persona_model.dart';
 import '../models/serie_model.dart';
+import 'cache_futuros.dart';
 import 'clave_service.dart';
 
 /// Error propio de TMDB: clave mal/servicio no disponible.
@@ -190,17 +191,17 @@ class TmdbService {
     }).toList();
   }
 
-  // Caché de IDs de IMDb: el calendario lo pide para cada serie favorita
-  // cada vez que cambia de periodo, y nunca cambia.
-  static final Map<int, String?> _cacheImdb = {};
+  // Caché de IDs de IMDb: el calendario y Próximamente lo piden para cada
+  // serie favorita (a la vez al entrar) y nunca cambia.
+  static final _cacheImdb = CacheFuturos();
 
   /// ID de IMDb de una serie (/tv/{id}/external_ids): puente con TVMaze.
-  static Future<String?> obtenerImdbId(int id) async {
-    if (_cacheImdb.containsKey(id)) return _cacheImdb[id];
-    final json = await _get('/tv/$id/external_ids');
-    final imdb = (json['imdb_id'] as String?) ?? '';
-    return _cacheImdb[id] = imdb.isEmpty ? null : imdb;
-  }
+  static Future<String?> obtenerImdbId(int id) =>
+      _cacheImdb.obtener('$id', () async {
+        final json = await _get('/tv/$id/external_ids');
+        final imdb = (json['imdb_id'] as String?) ?? '';
+        return imdb.isEmpty ? null : imdb;
+      });
 
   /// Detalle de una película (/movie/{id}) con puntuación, géneros
   /// y reparto (credits en la misma respuesta).

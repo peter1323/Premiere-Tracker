@@ -183,29 +183,29 @@ class CalendarioController extends ChangeNotifier {
     final seriesPorDia = <String, List<EntradaCalendario>>{};
     final peliculasPorDia = <String, List<EntradaCalendario>>{};
 
-    for (final fav in _favoritos) {
-      try {
-        if (fav.tipo == 'serie') {
-          final entradas = await _entradasSerie(fav, claveInicio, claveFin);
-          for (final entrada in entradas) {
-            (seriesPorDia[entrada.claveDia] ??= []).add(entrada);
-          }
-        } else {
-          final entrada = await _entradaPelicula(fav, claveInicio, claveFin);
-          if (entrada != null) {
-            (peliculasPorDia[entrada.claveDia] ??= []).add(entrada);
-          }
+    // Todos los favoritos a la vez (TVMaze sigue respetando su límite de
+    // peticiones); Future.wait devuelve los resultados en el orden de la
+    // lista de favoritos, así el calendario sale siempre igual.
+    final resultados = await Future.wait(
+      _favoritos.map((fav) async {
+        try {
+          return fav.tipo == 'serie'
+              ? await _entradasSerie(fav, claveInicio, claveFin)
+              : [?await _entradaPelicula(fav, claveInicio, claveFin)];
+        } catch (_) {
+          // Un favorito que falle no rompe el calendario de los demás
+          if (fav.tipo == 'serie') _tvmazeFallo = true;
+          return const <EntradaCalendario>[];
         }
-      } catch (_) {
-        // Un favorito que falle no rompe el calendario de los demás
-        if (fav.tipo == 'serie') _tvmazeFallo = true;
-      }
-      // Otra carga más reciente tomó el relevo: se para ya
-      if (token != _cargaToken) return;
-    }
+      }),
+    );
 
     // Otra carga más reciente tomó el relevo: se descarta esta
     if (token != _cargaToken) return;
+    for (final entrada in resultados.expand((lista) => lista)) {
+      final porDia = entrada.tipo == 'serie' ? seriesPorDia : peliculasPorDia;
+      (porDia[entrada.claveDia] ??= []).add(entrada);
+    }
     _seriesPorDia = seriesPorDia;
     _peliculasPorDia = peliculasPorDia;
     _rangoCargado = '$claveInicio|$claveFin';
