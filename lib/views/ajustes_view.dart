@@ -6,11 +6,11 @@
 // no dejarlos huérfanos tras cerrar. Vive en el IndexedStack.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../controllers/ajustes_controller.dart';
 import '../controllers/app_controller.dart';
 import '../l10n/app_strings.dart';
+import '../services/enlace_service.dart';
 
 /// Pantalla de Ajustes: idioma, tema, copia de seguridad, gestión de
 /// usuarios y créditos (TMDB y TVMaze).
@@ -314,7 +314,7 @@ class _CuerpoAjustes extends StatelessWidget {
         // Crédito de TVMaze con enlace clicable
         InkWell(
           borderRadius: BorderRadius.circular(8),
-          onTap: () => _abrirTvmaze(),
+          onTap: () => EnlaceService.abrir('https://www.tvmaze.com'),
           child: Padding(
             padding: const EdgeInsets.all(4),
             child: Text(
@@ -330,13 +330,6 @@ class _CuerpoAjustes extends StatelessWidget {
     );
   }
 
-  /// Abre la web de TVMaze en el navegador.
-  Future<void> _abrirTvmaze() async {
-    final uri = Uri.parse('https://www.tvmaze.com');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    }
-  }
 
   // ===== Utilidades =====
 

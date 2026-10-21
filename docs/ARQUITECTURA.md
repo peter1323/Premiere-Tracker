@@ -44,7 +44,7 @@ lib/
 | Capa | Carpeta | Responsabilidad | Ejemplo |
 |------|---------|-----------------|---------|
 | **Modelo** | `models/` | Representar los datos. Solo campos y conversiones JSON↔objeto. | `SerieModel`, `MangaModel`, `FavoritoModel` |
-| **Servicio** | `services/` | Obtener datos: llamadas HTTP a APIs, leer/guardar en disco, caché, límites de peticiones. **Nunca dibuja.** | `TmdbService`, `ClaveService`, `AnilistService`, `AlmacenamientoService` |
+| **Servicio** | `services/` | Obtener datos: llamadas HTTP a APIs, leer/guardar en disco, caché, límites de peticiones. **Nunca dibuja.** | `TmdbService`, `ClaveService`, `AnilistService`, `AlmacenamientoService`, `AvisosService` (avisos de Android), `EnlaceService` (abrir enlaces) |
 | **Controlador** | `controllers/` | La lógica de una pantalla: pedir datos al servicio, guardar el estado y avisar a la vista con `notifyListeners()`. **Nunca dibuja.** | `DetalleController`, `AppController` |
 | **Vista** | `views/` | Dibuja la interfaz y reacciona a los cambios del controlador. **Nunca hace llamadas de red.** | `DetalleView`, `FavoritosView` |
 

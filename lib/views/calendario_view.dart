@@ -67,24 +67,9 @@ class _CuerpoCalendario extends StatelessWidget {
         onHoy: control.irAHoy,
         onModo: control.cambiarModoCalendario,
         onPestana: control.cambiarPestanaCalendario,
-        onAbrirEntrada: (entrada) => _abrirEntrada(context, entrada, idioma),
+        onAbrirEntrada: (entrada) =>
+            DetalleView.abrirEntrada(context, entrada, idiomaApi(idioma)),
       ),
     );
-  }
-
-  /// Abre el detalle de un episodio o estreno del calendario.
-  void _abrirEntrada(
-      BuildContext context, EntradaCalendario entrada, String idioma) {
-    final language = idiomaApi(idioma);
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => DetalleView(
-        tipo: entrada.tipo,
-        id: entrada.id,
-        fuente: entrada.fuente,
-        imdbId: entrada.imdbId,
-        tituloInicial: entrada.titulo,
-        language: language,
-      ),
-    ));
   }
 }

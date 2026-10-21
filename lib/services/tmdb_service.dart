@@ -149,7 +149,10 @@ class TmdbService {
     bool conReparto = true,
   }) async {
     final parametros = <String, String>{'language': language};
-    if (conReparto) parametros['append_to_response'] = 'credits';
+    // Reparto y "dónde verlo" en la misma petición
+    if (conReparto) {
+      parametros['append_to_response'] = 'credits,watch/providers';
+    }
     final json = await _get('/tv/$id', parametros: parametros);
     final serie = SerieModel.fromTmdbDetalle(json);
     if (!conReparto) return serie;
@@ -209,7 +212,8 @@ class TmdbService {
   }) async {
     final parametros = <String, String>{
       'language': language,
-      if (conCreditos) 'append_to_response': 'credits',
+      // Reparto y "dónde verlo" en la misma petición
+      if (conCreditos) 'append_to_response': 'credits,watch/providers',
     };
     final json = await _get('/movie/$id', parametros: parametros);
     return PeliculaModel.fromTmdbDetalle(json);

@@ -2,7 +2,7 @@
 // y sabe convertir la respuesta JSON de TMDB a objeto (fromTmdb) y de
 // objeto. No hace llamadas de red ni lógica de interfaz.
 import 'reparto_model.dart';
-import 'serie_model.dart' show TmdbRefs;
+import 'serie_model.dart' show DondeVer, TmdbRefs;
 
 /// Película de TMDB (TVMaze no tiene películas).
 class PeliculaModel {
@@ -22,6 +22,7 @@ class PeliculaModel {
   final double? puntuacion; // nota media 0-10 (null si no hay)
   final List<String> generos; // p. ej. Acción, Drama...
   final List<RepartoModel> reparto;
+  final DondeVer? dondeVer; // plataformas en España
 
   const PeliculaModel({
     required this.id,
@@ -34,6 +35,7 @@ class PeliculaModel {
     this.puntuacion,
     this.generos = const [],
     this.reparto = const [],
+    this.dondeVer,
   });
 
   /// Año de estreno, o null si no hay fecha.
@@ -65,6 +67,7 @@ class PeliculaModel {
       puntuacion: (json['vote_average'] as num?)?.toDouble(),
       generos: TmdbRefs.nombresDeLista(json['genres']),
       reparto: TmdbRefs.repartoDeCredits(json['credits']),
+      dondeVer: TmdbRefs.dondeVerDe(json['watch/providers']),
     );
   }
 

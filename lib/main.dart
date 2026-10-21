@@ -1,8 +1,9 @@
 // Punto de entrada y raíz de la app Premiere Tracker.
 //
 // Este archivo hace tres cosas:
-//  1. Arranca la app y carga la API key de TMDB que el usuario guardó en
-//     la app; si falta, la app funciona igual y se configura después.
+//  1. Arranca la app: prepara los avisos de estreno (Android) y carga la
+//     API key de TMDB que el usuario guardó en la app (si falta, la app
+//     funciona igual y se configura después).
 //  2. Crea los controladores globales (AppController y UsuariosController)
 //     con el paquete `provider` y monta el MaterialApp con el tema y el
 //     idioma del usuario.
@@ -21,6 +22,7 @@ import 'package:provider/provider.dart';
 import 'controllers/app_controller.dart';
 import 'controllers/usuarios_controller.dart';
 import 'l10n/app_strings.dart';
+import 'services/avisos_service.dart';
 import 'services/clave_service.dart';
 import 'views/ajustes_view.dart';
 import 'views/calendario_view.dart';
@@ -40,6 +42,8 @@ final GlobalKey<NavigatorState> _claveNavegador = GlobalKey<NavigatorState>();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Avisos de estreno (solo Android; en Windows no hace nada)
+  await AvisosService.iniciar();
   // Clave de TMDB guardada en la app (si el usuario ya la configuró)
   await ClaveService.cargar();
 

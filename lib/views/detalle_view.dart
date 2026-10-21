@@ -1,5 +1,5 @@
 // VISTA de la ficha de una serie o película (se abre con Navigator.push).
-// Muestra portada, datos generales, reparto (en fila horizontal con la
+// Muestra portada, datos generales, dónde verlo, reparto (en fila con la
 // rueda del ratón convertida en desplazamiento lateral), episodios por
 // temporada, botones de favorito/visto y el campo de nota. Crea su
 // DetalleController con ChangeNotifierProvider. El diálogo para escribir
@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../controllers/app_controller.dart';
+import '../controllers/calendario_controller.dart';
 import '../controllers/detalle_controller.dart';
 import '../l10n/app_strings.dart';
 import '../models/episodio_model.dart';
@@ -19,6 +20,7 @@ import '../models/pelicula_model.dart';
 import '../models/persona_model.dart';
 import '../models/reparto_model.dart';
 import '../models/serie_model.dart';
+import '../services/enlace_service.dart';
 import 'manga_detalle_view.dart';
 import 'persona_view.dart';
 import 'widgets/selector_fuente.dart';
@@ -67,6 +69,21 @@ class DetalleView extends StatefulWidget {
         id: pelicula.id,
         fuente: 'tmdb',
         tituloInicial: pelicula.titulo,
+        language: language,
+      ),
+    ));
+  }
+
+  /// Abre el detalle de un estreno del calendario o de Próximamente.
+  static void abrirEntrada(
+      BuildContext context, EntradaCalendario entrada, String language) {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => DetalleView(
+        tipo: entrada.tipo,
+        id: entrada.id,
+        fuente: entrada.fuente,
+        imdbId: entrada.imdbId,
+        tituloInicial: entrada.titulo,
         language: language,
       ),
     ));
@@ -144,6 +161,7 @@ class _CuerpoDetalle extends StatelessWidget {
     final reparto =
         control.serie?.reparto ?? control.pelicula?.reparto ?? const [];
     final canales = control.serie?.canales ?? const [];
+    final dondeVer = control.serie?.dondeVer ?? control.pelicula?.dondeVer;
 
     return Scaffold(
       appBar: AppBar(title: Text(titulo, overflow: TextOverflow.ellipsis)),
@@ -206,6 +224,36 @@ class _CuerpoDetalle extends StatelessWidget {
                               ),
                           ],
                         ),
+                        const SizedBox(height: 24),
+                      ],
+                      // Dónde verlo en España (solo con datos de TMDB):
+                      // cada plataforma abre la página con todas las
+                      // opciones; TMDB exige citar a JustWatch.
+                      if (dondeVer != null) ...[
+                        Text(t('dondeVer', idioma),
+                            style: tema.textTheme.titleMedium),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final p in dondeVer.plataformas)
+                              ActionChip(
+                                avatar: p.logo == null
+                                    ? const Icon(Icons.play_circle_outline)
+                                    : ClipRRect(
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: Image.network(p.logo!),
+                                      ),
+                                label: Text(p.nombre),
+                                onPressed: () =>
+                                    EnlaceService.abrir(dondeVer.enlace),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(t('datosJustWatch', idioma),
+                            style: tema.textTheme.bodySmall),
                         const SizedBox(height: 24),
                       ],
                       // Reparto (cada miembro abre su ficha de persona)

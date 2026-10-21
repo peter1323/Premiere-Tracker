@@ -14,11 +14,14 @@
 // Sin clave, las búsquedas usan TVMaze (no necesita clave). En los dos
 // casos hace falta conexión a internet. Cualquier error de Flutter durante
 // el recorrido (overflow, excepción...) hace fallar la prueba.
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:premiere_tracker/main.dart';
+import 'package:premiere_tracker/services/avisos_service.dart';
 import 'package:premiere_tracker/services/clave_service.dart';
 import 'package:premiere_tracker/views/widgets/tarjeta_resultado.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -34,6 +37,7 @@ void main() {
       _claveTmdb.isEmpty ? {} : {'tmdb_key': _claveTmdb},
     );
     await ClaveService.cargar();
+    await AvisosService.iniciar(); // como en main() (solo Android)
     if (_horizontal) {
       // Gira la app a horizontal en el dispositivo real (y la deja libre al final)
       await SystemChrome.setPreferredOrientations([
@@ -91,6 +95,8 @@ void main() {
       await pulsar(find.byType(TextField));
       await tester.enterText(find.byType(TextField).first, texto);
       await tester.testTextInput.receiveAction(TextInputAction.done);
+      // Se cierra el teclado (en el móvil tapaba la parte de abajo)
+      FocusManager.instance.primaryFocus?.unfocus();
       await esperar(esperado);
     }
 
@@ -193,6 +199,8 @@ void main() {
       ),
     );
     await esperar(find.byType(BackButton));
+    // Con clave de TMDB la ficha dice en qué plataformas verla en España
+    if (_claveTmdb.isNotEmpty) await esperar(find.text('Dónde verlo'));
     await pulsar(find.byType(BackButton));
 
     // Quitar de favoritos desde su propia pantalla
@@ -201,11 +209,12 @@ void main() {
 
     // --- 5b. Serie semanal (Dragon Ball Super: Beerus, sale cada domingo):
     // al guardarla en favoritos sus episodios deben salir en el calendario.
-    await buscar('Dragon Ball Super Beerus', find.textContaining('Beerus'));
+    // Se espera a la TARJETA: el texto "Beerus" ya está en el buscador
     final tarjetaDbs = find.ancestor(
       of: find.textContaining('Beerus'),
       matching: find.byType(TarjetaResultado),
     );
+    await buscar('Dragon Ball Super Beerus', tarjetaDbs);
     await pulsar(enTarjeta(tarjetaDbs.first, Icons.favorite_border));
 
     await ir('Calendario');
@@ -234,6 +243,22 @@ void main() {
     await pulsar(episodioDbs);
     await esperar(find.byType(BackButton));
     await pulsar(find.byType(BackButton));
+
+    // --- 5c. Próximamente en Inicio: sin búsqueda salen los estrenos de
+    // los favoritos de esta semana (Beerus el domingo)
+    await ir('Inicio');
+    await pulsar(find.byTooltip('Cerrar'));
+    await esperar(find.text('Próximamente (7 días)'));
+    await esperar(episodioDbs);
+    // Android: con esa lista queda programado el aviso del estreno
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      final avisos = await FlutterLocalNotificationsPlugin()
+          .pendingNotificationRequests();
+      expect(
+        avisos.map((a) => a.body),
+        contains(contains('Dragon Ball Super')),
+      );
+    }
 
     // --- 6. Ajustes: idioma y tema ---
     await ir('Ajustes');

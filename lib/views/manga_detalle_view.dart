@@ -7,12 +7,12 @@
 // Crea su MangaDetalleController, que se destruye al volver atrás.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../controllers/app_controller.dart';
 import '../controllers/manga_detalle_controller.dart';
 import '../l10n/app_strings.dart';
 import '../models/manga_model.dart';
+import '../services/enlace_service.dart';
 import '../services/anilist_service.dart';
 import '../services/mangadex_service.dart';
 import 'widgets/tarjeta_manga.dart';
@@ -310,12 +310,12 @@ class _MangaDetalleViewState extends State<MangaDetalleView> {
           children: [
             if (m.url.isNotEmpty)
               FilledButton.icon(
-                onPressed: () => _abrirEnlace(m.url),
+                onPressed: () => EnlaceService.abrir(m.url),
                 icon: const Icon(Icons.open_in_new_rounded),
                 label: Text(t('verEnAniList', strings)),
               ),
             FilledButton.tonalIcon(
-              onPressed: () => _abrirEnlace(
+              onPressed: () => EnlaceService.abrir(
                 'https://mangadex.org/search?q=${Uri.encodeComponent(m.titulo)}',
               ),
               icon: const Icon(Icons.open_in_new_rounded),
@@ -360,12 +360,6 @@ class _MangaDetalleViewState extends State<MangaDetalleView> {
     );
   }
 
-  Future<void> _abrirEnlace(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    }
-  }
 }
 
 /// Bloque del último capítulo en cada idioma: cargando, el capítulo de ese

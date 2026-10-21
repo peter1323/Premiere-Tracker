@@ -2,6 +2,10 @@
     <!-- Permiso de Internet: sin él, en release la app no podría llamar a
          TMDB, TVMaze, AniList ni MangaDex. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Avisos de estreno: mostrar notificaciones (Android 13+ lo pide al
+         usuario) y volver a programarlas al reiniciar el móvil. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <application
         android:label="Premiere Tracker"
         android:name="${applicationName}"
@@ -28,6 +32,17 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Receptores de flutter_local_notifications: lanzan los avisos
+             programados y los reprograman tras reiniciar o actualizar. -->
+        <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
+        <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON"/>
+            </intent-filter>
+        </receiver>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

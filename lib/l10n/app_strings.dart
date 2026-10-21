@@ -80,6 +80,10 @@ const Map<String, Map<String, String>> cadenas = {
     'quitarLeidos': 'Quitar de leídos',
     'errorCargarManga': 'No se ha podido cargar la ficha del manga',
     'inicioVacio': 'Busca series, películas o personas para empezar',
+    'proximosEstrenos': 'Próximamente (7 días)',
+    'avisoHoy': 'Hoy se estrena',
+    'dondeVer': 'Dónde verlo',
+    'datosJustWatch': 'Datos de plataformas: JustWatch',
     'anadirFavoritos': 'Añadir a favoritos',
     'quitarFavoritos': 'Quitar de favoritos',
     'anadirVistos': 'Añadir a vistos',
@@ -278,6 +282,10 @@ const Map<String, Map<String, String>> cadenas = {
     'quitarLeidos': 'Unmark as read',
     'errorCargarManga': 'Could not load the manga details',
     'inicioVacio': 'Search series, movies or people to get started',
+    'proximosEstrenos': 'Coming up (next 7 days)',
+    'avisoHoy': 'Out today',
+    'dondeVer': 'Where to watch',
+    'datosJustWatch': 'Streaming data by JustWatch',
     'anadirFavoritos': 'Add to favorites',
     'quitarFavoritos': 'Remove from favorites',
     'anadirVistos': 'Mark as watched',
@@ -506,3 +514,19 @@ String nombreMes(int mes, String idioma) {
   final lista = idioma == 'en' ? mesesEn : mesesEs;
   return lista[mes < 1 || mes > 12 ? 0 : mes - 1];
 }
+
+/// Claves de los días de la semana abreviados (Lun, Mar...), de lunes a
+/// domingo, en el orden de DateTime.weekday.
+const List<String> clavesDiasCortos = [
+  'lunesCorto',
+  'martesCorto',
+  'miercolesCorto',
+  'juevesCorto',
+  'viernesCorto',
+  'sabadoCorto',
+  'domingoCorto',
+];
+
+/// Día de la semana abreviado de [fecha] en el idioma ("Lun", "Mon"...).
+String diaCorto(DateTime fecha, String idioma) =>
+    t(clavesDiasCortos[fecha.weekday - 1], idioma);

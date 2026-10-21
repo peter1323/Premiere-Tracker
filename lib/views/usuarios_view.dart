@@ -7,12 +7,12 @@
 // llama a AppController.establecerUsuario() para entrar a la app.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../controllers/app_controller.dart';
 import '../../controllers/usuarios_controller.dart';
 import '../../l10n/app_strings.dart';
 import '../../models/usuario_model.dart';
+import '../services/enlace_service.dart';
 
 /// Pantalla inicial: lista de usuarios y creación de usuarios con PIN.
 class UsuariosView extends StatefulWidget {
@@ -305,7 +305,8 @@ class _UsuariosViewState extends State<UsuariosView> {
             ],
             const SizedBox(height: 4),
             TextButton.icon(
-              onPressed: _abrirPaginaClave,
+              onPressed: () =>
+                  EnlaceService.abrir('https://www.themoviedb.org/settings/api'),
               icon: const Icon(Icons.open_in_new, size: 16),
               label: Text(t('obtenerClave', idioma)),
             ),
@@ -329,11 +330,6 @@ class _UsuariosViewState extends State<UsuariosView> {
     });
   }
 
-  /// Abre la página de TMDB donde se solicita la API key.
-  Future<void> _abrirPaginaClave() async {
-    final uri = Uri.parse('https://www.themoviedb.org/settings/api');
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
 }
 
 /// Diálogo de login: pide el PIN del usuario (y permite cambiarlo).

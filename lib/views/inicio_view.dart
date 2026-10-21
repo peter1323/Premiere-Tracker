@@ -3,10 +3,12 @@
 // y películas (TMDB + TVMaze) y de mangas (AniList). Solo dibuja y llama
 // a InicioController para buscar; no toca las APIs directamente. Vive en
 // el IndexedStack de main.dart, así que conserva su estado al volver.
+// Mientras no se busca nada muestra Próximamente (estrenos de favoritos).
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../controllers/app_controller.dart';
+import '../controllers/calendario_controller.dart';
 import '../controllers/inicio_controller.dart';
 import '../l10n/app_strings.dart';
 import '../models/pelicula_model.dart';
@@ -15,6 +17,7 @@ import '../models/serie_model.dart';
 import 'detalle_view.dart';
 import 'persona_view.dart';
 import 'widgets/estado_vacio.dart';
+import 'widgets/proximos_estrenos.dart';
 import 'widgets/selector_fuente.dart';
 import 'widgets/tarjeta_persona.dart';
 import 'widgets/tarjeta_resultado.dart';
@@ -42,9 +45,15 @@ class _InicioViewState extends State<InicioView>
 
   @override
   Widget build(BuildContext context) {
-    // El controlador vive con esta pantalla (se crea al entrar al Inicio)
-    return ChangeNotifierProvider(
-      create: (_) => InicioController(),
+    // Los controladores viven con esta pantalla: el del buscador y el de
+    // Próximamente (el del calendario en modo 'proximos')
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => InicioController()),
+        ChangeNotifierProvider(
+          create: (_) => CalendarioController(modo: 'proximos'),
+        ),
+      ],
       child: _CuerpoInicio(
         controladorTexto: _textoBuscador,
         pestanas: _pestanas,
@@ -152,8 +161,11 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
       return const Center(child: CircularProgressIndicator());
     }
     if (!control.hayConsulta) {
-      // Sin búsqueda todavía: se invita a usar el buscador
-      return EstadoVacio(icono: Icons.search, texto: t('inicioVacio', idioma));
+      // Sin búsqueda: los próximos estrenos de los favoritos; si no hay,
+      // se invita a usar el buscador
+      return ProximosEstrenos(
+        vacio: EstadoVacio(icono: Icons.search, texto: t('inicioVacio', idioma)),
+      );
     }
     if (!control.hayResultados) {
       return EstadoVacio(

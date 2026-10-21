@@ -12,10 +12,15 @@ import '../services/tmdb_service.dart';
 import '../services/tvmaze_service.dart';
 
 /// Lógica de la pantalla de Calendario: estrenos y episodios de los
-/// favoritos del usuario, con vistas de día, semana y mes.
+/// favoritos del usuario, con vistas de día, semana y mes. Inicio lo usa
+/// también con el modo 'proximos' (hoy y los 6 días siguientes).
 class CalendarioController extends ChangeNotifier {
-  String _modoCalendario = 'semana'; // 'dia', 'semana' o 'mes'
+  // 'dia', 'semana', 'mes', 'anio' o 'proximos'
+  String _modoCalendario;
   DateTime _fechaVisible = DateTime.now();
+
+  CalendarioController({String modo = 'semana'}) : _modoCalendario = modo;
+
   String _pestanaCalendario = 'series'; // 'series' o 'peliculas'
   bool _calendarioCargando = false;
   String? _avisoCalendario; // clave de traducción o null
@@ -36,6 +41,13 @@ class CalendarioController extends ChangeNotifier {
   Map<String, List<EntradaCalendario>> get seriesPorDia => _seriesPorDia;
   Map<String, List<EntradaCalendario>> get peliculasPorDia => _peliculasPorDia;
 
+  /// Todos los estrenos cargados (series y películas) en orden de fecha y
+  /// hora. Es lo que muestra Próximamente en Inicio.
+  List<EntradaCalendario> get proximas => [
+    ..._seriesPorDia.values.expand((l) => l),
+    ..._peliculasPorDia.values.expand((l) => l),
+  ]..sort(compararEstrenos);
+
   /// Primer y último día ('yyyy-MM-dd') del periodo visible según el modo.
   (String, String) get _rangoVisible => _rangoDe(_modoCalendario, _fechaVisible);
 
@@ -49,6 +61,11 @@ class CalendarioController extends ChangeNotifier {
         final inicio = DateTime(fecha.year, fecha.month, 1);
         final fin = DateTime(fecha.year, fecha.month + 1, 0);
         return (claveDia(inicio), claveDia(fin));
+      case 'proximos':
+        return (
+          claveDia(fecha),
+          claveDia(DateTime(fecha.year, fecha.month, fecha.day + 6)),
+        );
       case 'anio':
         return (claveDia(DateTime(fecha.year, 1, 1)),
             claveDia(DateTime(fecha.year, 12, 31)));
@@ -67,6 +84,7 @@ class CalendarioController extends ChangeNotifier {
   DateTime _normalizar(DateTime fecha) {
     switch (_modoCalendario) {
       case 'dia':
+      case 'proximos':
         return DateTime(fecha.year, fecha.month, fecha.day);
       case 'mes':
         return DateTime(fecha.year, fecha.month, 1);
@@ -315,6 +333,10 @@ class EntradaCalendario {
     this.posterUrl,
     required this.claveDia,
   });
+
+  /// Texto para mostrar: "T1E3 · Título" en series, solo el título en
+  /// películas. Lo usan el calendario, Próximamente y los avisos.
+  String get texto => etiqueta.isNotEmpty ? '$etiqueta · $titulo' : titulo;
 }
 
 /// Clave de un día en formato 'yyyy-MM-dd' (para agrupar por día).
@@ -322,3 +344,12 @@ String claveDia(DateTime fecha) =>
     '${fecha.year.toString().padLeft(4, '0')}-'
     '${fecha.month.toString().padLeft(2, '0')}-'
     '${fecha.day.toString().padLeft(2, '0')}';
+
+/// Orden de los estrenos: por día y, dentro del día, por hora (los que no
+/// tienen hora van al final). Lo usan Próximamente y el calendario.
+int compararEstrenos(EntradaCalendario a, EntradaCalendario b) {
+  final porDia = a.claveDia.compareTo(b.claveDia);
+  if (porDia != 0) return porDia;
+  if (a.hora.isEmpty != b.hora.isEmpty) return a.hora.isEmpty ? 1 : -1;
+  return a.hora.compareTo(b.hora);
+}

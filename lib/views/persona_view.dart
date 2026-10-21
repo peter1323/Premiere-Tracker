@@ -5,12 +5,12 @@
 // destruye al volver atrás. Solo dibuja; la lógica está en el controlador.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../controllers/app_controller.dart';
 import '../controllers/persona_controller.dart';
 import '../l10n/app_strings.dart';
 import '../models/persona_model.dart';
+import '../services/enlace_service.dart';
 import 'detalle_view.dart';
 
 /// Pantalla de detalle de una persona: foto, por qué es conocida,
@@ -301,13 +301,13 @@ class _CuerpoPersona extends StatelessWidget {
       children: [
         if (urlTmdb != null)
           TextButton.icon(
-            onPressed: () => _abrirEnlace(context, urlTmdb),
+            onPressed: () => EnlaceService.abrir(urlTmdb),
             icon: const Icon(Icons.open_in_new, size: 18),
             label: Text(t('verTmdb', idioma)),
           ),
         if (persona.urlPagina != null)
           TextButton.icon(
-            onPressed: () => _abrirEnlace(context, persona.urlPagina!),
+            onPressed: () => EnlaceService.abrir(persona.urlPagina!),
             icon: const Icon(Icons.open_in_new, size: 18),
             label: Text(t('verTvmaze', idioma)),
           ),
@@ -315,13 +315,6 @@ class _CuerpoPersona extends StatelessWidget {
     );
   }
 
-  /// Abre una URL en el navegador del sistema (silencioso si falla).
-  Future<void> _abrirEnlace(BuildContext context, String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    }
-  }
 
   /// Icono de marcador cuando no hay foto de perfil.
   Widget _marcadorFoto(ColorScheme esquema) {

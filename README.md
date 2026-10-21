@@ -11,12 +11,14 @@ Aplicación multiplataforma para Windows y Android desarrollada con Flutter y Da
 - **Usuarios locales con PIN**: cada usuario tiene su propio perfil con un PIN de 4 dígitos cifrado con SHA-256 (nunca en texto plano) y sus propios favoritos, vistos, notas, tema e idioma. Se entra automáticamente al escribir los 4 dígitos; si el PIN está mal se avisa y se limpia el campo, y **tras dos fallos aparece una pista con los dos primeros dígitos**. Desde el propio diálogo de acceso también se puede **cambiar el PIN** (validando antes el actual). El tema elegido se recuerda también en la pantalla de usuarios.
 - **Clave TMDB configurable**: la clave de TMDB se introduce desde la propia app (pantalla de usuarios → «Clave TMDB», con botón para obtenerla) y se guarda en el dispositivo; por eso las versiones compiladas (`.exe` y APK) **no llevan ninguna clave embebida** y cada persona usa la suya.
 - **Búsqueda global anti-fallos**: una sola caja busca **series, películas y personas a la vez** (en paralelo, con tiempos de espera de 10 s). Si una API falla, la otra sigue funcionando y se muestra un aviso claro; si fallan las dos, se avisa de "Sin conexión o servicios no disponibles". Los resultados aparecen en tarjetas con botones de favorito ❤️ y visto 👁️.
+- **Próximamente**: en Inicio, mientras no se busca nada, aparecen los estrenos de tus favoritos de hoy a 6 días vista (episodios y películas), y al pulsarlos se abre su ficha.
+- **Avisos de estreno (Android)**: notificación del móvil a las 10:00 del día de cada estreno de tus favoritos ("Hoy se estrena · T1E4 · …"), aunque la app esté cerrada. Se reprograman al abrir la app.
 - **Selector de fuente TMDB | TVMaze**: en las series se puede cambiar entre las dos fuentes; se enlazan entre sí mediante el ID de IMDb. Si una fuente no está disponible, su opción queda desactivada.
-- **Detalle de series y películas**: póster, sinopsis, estado (en emisión, finalizada, cancelada...), fecha de estreno, géneros, puntuación, temporadas desplegables con sus episodios (número, título y fecha), el próximo episodio destacado y el **reparto con cada actor pulsable** (abre su ficha). Incluye los botones "Añadir a favoritos" y "Añadir a vistos".
+- **Detalle de series y películas**: póster, sinopsis, estado (en emisión, finalizada, cancelada...), fecha de estreno, géneros, puntuación, temporadas desplegables con sus episodios (número, título y fecha), el próximo episodio destacado, **dónde verlo** en España (plataformas de streaming con su logo; datos de JustWatch vía TMDB) y el **reparto con cada actor pulsable** (abre su ficha). Incluye los botones "Añadir a favoritos" y "Añadir a vistos".
 - **Fichas de persona**: foto, biografía y créditos (series y películas en las que ha participado), con enlaces a las webs de las APIs.
 - **Lectura (mangas, manhwas, manhuas y novelas)**: buscador sobre AniList con dos pestañas — **Manga / Manhwa / Manhua** y **Novelas** — lanzando las dos búsquedas en paralelo con una sola escritura. La ficha incluye portada, estado (con capítulos y tomos marcados como «?» si aún no hay total), puntuación, formato, país, fecha de inicio, **autores**, géneros, **sinopsis en español** cuando MangaDex la tiene (si no, la de AniList) y el **último capítulo publicado por idioma** (español de España, español latino e inglés) consultado a MangaDex con límite de peticiones y caché. Tiene botones de **favorito** y **marcar como leído**; los mangas guardados se abren desde Favoritos/Vistos recargando la ficha completa desde AniList.
 - **Calendario** con cuatro vistas y pestañas Series / Películas:
-  - **Día** y **Semana**: flechas para cambiar de periodo y botón morado "Hoy".
+  - **Día** y **Semana**: flechas para cambiar de periodo y botón morado "Hoy". En Windows, rejilla por horas; en Android, lista de estrenos por día (con su hora), más legible en vertical y en horizontal.
   - **Mes**: rejilla con los estrenos de cada día, y selector de mes y año (de 2 años atrás a 6 años adelante).
   - **Año**: rejilla de los 12 meses con el número de estrenos de cada uno; al pulsar un mes se abre su vista Mes.
   - Los datos se cargan solo del periodo visible, respetando el límite de peticiones de TVMaze (20 cada 10 segundos, con caché en memoria).
@@ -34,7 +36,8 @@ Aplicación multiplataforma para Windows y Android desarrollada con Flutter y Da
 - **shared_preferences** – almacenamiento local en formato JSON
 - **crypto** – cifrado SHA-256 de los PIN
 - **file_picker** – exportar / importar copias de seguridad
-- **url_launcher** – enlaces a las webs de las APIs
+- **url_launcher** – enlaces a las webs de las APIs y a "dónde verlo"
+- **flutter_local_notifications** + **timezone** – avisos de estreno en Android
 - **calendar_view** (fijado a 2.0.0) – vistas de Día y Semana del calendario (Mes y Año son personalizadas)
 
 ## APIs usadas

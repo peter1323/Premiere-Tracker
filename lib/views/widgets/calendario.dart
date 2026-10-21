@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 
 import '../../controllers/calendario_controller.dart';
 import '../../l10n/app_strings.dart';
+import 'fila_estreno.dart';
 
 /// Calendario de estrenos con vistas de día, semana, mes y año (las
 /// tres primeras con el paquete calendar_view; año es propia). Incluye
@@ -63,15 +64,6 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
     31,
   );
 
-  static const List<String> _diasCortos = [
-    'lunesCorto',
-    'martesCorto',
-    'miercolesCorto',
-    'juevesCorto',
-    'viernesCorto',
-    'sabadoCorto',
-    'domingoCorto',
-  ];
 
   late final TabController _pestanas = TabController(
     length: 2,
@@ -434,13 +426,10 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
                     inicio.day,
                     inicio.hour + 1,
                   ));
-      final titulo = entrada.etiqueta.isNotEmpty
-          ? '${entrada.etiqueta} · ${entrada.titulo}'
-          : entrada.titulo;
 
       eventos.add(
         CalendarEventData<EntradaCalendario>(
-          title: titulo,
+          title: entrada.texto,
           date: fecha,
           event: entrada,
           color: color,
@@ -493,7 +482,11 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
   Widget _vistaLista({required bool paginaScrollea}) {
     final esquema = Theme.of(context).colorScheme;
     final esSemana = widget.modo == 'semana';
-    final inicio = widget.fechaVisible;
+    final f = widget.fechaVisible;
+    // Semana: empieza en el lunes de la semana visible
+    final inicio = esSemana
+        ? DateTime(f.year, f.month, f.day - (f.weekday - 1))
+        : DateTime(f.year, f.month, f.day);
     final dias = [
       for (var i = 0; i < (esSemana ? 7 : 1); i++)
         DateTime(inicio.year, inicio.month, inicio.day + i),
@@ -525,8 +518,13 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
               ),
             ),
           ),
-        for (final e in _entradasOrdenadas(porDia[_claveDe(dia)]))
-          _filaEntrada(e, colorEvento),
+        for (final e in [...?porDia[_claveDe(dia)]]..sort(compararEstrenos))
+          FilaEstreno(
+            entrada: e,
+            color: colorEvento,
+            prefijo: e.hora,
+            onTap: () => widget.onAbrirEntrada(e),
+          ),
         if ((porDia[_claveDe(dia)] ?? const []).isEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
@@ -577,63 +575,17 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
         if (paginaScrollea)
           ...filas
         else
-          Expanded(child: ListView(children: filas)),
-      ],
-    );
-  }
-
-  /// Entradas de un día ordenadas por hora (las que no tienen, al final).
-  List<EntradaCalendario> _entradasOrdenadas(List<EntradaCalendario>? lista) {
-    final copia = [...?lista];
-    copia.sort((a, b) {
-      if (a.hora.isEmpty != b.hora.isEmpty) return a.hora.isEmpty ? 1 : -1;
-      return a.hora.compareTo(b.hora);
-    });
-    return copia;
-  }
-
-  /// Fila de un estreno en la lista: hora (si la hay) y "T1E3 · Título".
-  /// Al pulsarla se abre su ficha.
-  Widget _filaEntrada(EntradaCalendario entrada, Color color) {
-    final colorTexto = _textoClaro(color) ? Colors.white : Colors.black87;
-    final titulo = entrada.etiqueta.isNotEmpty
-        ? '${entrada.etiqueta} · ${entrada.titulo}'
-        : entrada.titulo;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Material(
-        color: color,
-        borderRadius: BorderRadius.circular(8),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(8),
-          onTap: () => widget.onAbrirEntrada(entrada),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
-              children: [
-                if (entrada.hora.isNotEmpty) ...[
-                  Text(
-                    entrada.hora,
-                    style: TextStyle(
-                      color: colorTexto,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                ],
-                Expanded(
-                  child: Text(
-                    titulo,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: colorTexto),
-                  ),
-                ),
-              ],
+          // Como mucho 7 días: basta una columna que se desliza (se crean
+          // todas las filas, también las que aún no se ven)
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: filas,
+              ),
             ),
           ),
-        ),
-      ),
+      ],
     );
   }
 
@@ -714,7 +666,7 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: Row(
             children: [
-              for (final dia in _diasCortos)
+              for (final dia in clavesDiasCortos)
                 Expanded(
                   child: Center(
                     child: Text(
@@ -1020,9 +972,6 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
 
   /// Chip de un estreno dentro de la celda del mes.
   Widget _chipDe(EntradaCalendario entrada, Color color) {
-    final titulo = entrada.etiqueta.isNotEmpty
-        ? '${entrada.etiqueta} · ${entrada.titulo}'
-        : entrada.titulo;
     return GestureDetector(
       onTap: () => widget.onAbrirEntrada(entrada),
       child: Container(
@@ -1034,12 +983,12 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
           borderRadius: BorderRadius.circular(4),
         ),
         child: Text(
-          titulo,
+          entrada.texto,
           maxLines: 1,
           overflow: TextOverflow.clip,
           style: TextStyle(
             fontSize: 11,
-            color: _textoClaro(color) ? Colors.white : Colors.black87,
+            color: colorTextoSobre(color),
           ),
         ),
       ),
@@ -1131,16 +1080,12 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w500,
-            color: _textoClaro(evento.color) ? Colors.white : Colors.black87,
+            color: colorTextoSobre(evento.color),
           ),
         ),
       ),
     );
   }
-
-  /// true si sobre [color] conviene texto blanco (color oscuro).
-  bool _textoClaro(Color color) =>
-      ThemeData.estimateBrightnessForColor(color) == Brightness.dark;
 
   /// Botón "Hoy": vuelve el controlador y la vista al día de hoy.
   void _irAHoy() {
@@ -1217,7 +1162,7 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
 
   /// Título de la cabecera del día: "Lun 12/10/2026".
   String _tituloDia(DateTime fecha, {DateTime? secondaryDate}) {
-    final dia = t(_diasCortos[fecha.weekday - 1], widget.idioma);
+    final dia = diaCorto(fecha, widget.idioma);
     String d2(int n) => n.toString().padLeft(2, '0');
     return '$dia ${d2(fecha.day)}/${d2(fecha.month)}/${fecha.year}';
   }

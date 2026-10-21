@@ -6,8 +6,10 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:premiere_tracker/controllers/app_controller.dart';
+import 'package:premiere_tracker/controllers/calendario_controller.dart';
 import 'package:premiere_tracker/models/favorito_model.dart';
 import 'package:premiere_tracker/models/nota_model.dart';
+import 'package:premiere_tracker/models/serie_model.dart';
 import 'package:premiere_tracker/models/usuario_model.dart';
 import 'package:premiere_tracker/services/almacenamiento_service.dart';
 import 'package:premiere_tracker/services/copia_seguridad_service.dart';
@@ -92,6 +94,54 @@ void main() {
       expect(app.notas, hasLength(1));
       final guardados = await AlmacenamientoService.cargarUsuarios();
       expect(guardados.single.favoritos, hasLength(2));
+    });
+  });
+
+  group('Estrenos', () {
+    test('dónde verlo: plataformas de España sin repetir, o null', () {
+      Map<String, dynamic> netflix(int id) => {
+        'provider_id': id,
+        'provider_name': 'Netflix',
+        'logo_path': '/n.png',
+      };
+      final dondeVer = TmdbRefs.dondeVerDe({
+        'results': {
+          'US': {
+            'flatrate': [netflix(99)],
+          },
+          'ES': {
+            'link': 'https://tmdb/watch',
+            'flatrate': [netflix(8)],
+            'ads': [netflix(8)], // la misma: no se repite
+            'buy': [netflix(10)], // compra: no se muestra
+          },
+        },
+      });
+      expect(dondeVer?.enlace, 'https://tmdb/watch');
+      expect(dondeVer?.plataformas.single.logo, endsWith('/w92/n.png'));
+      expect(TmdbRefs.dondeVerDe({'results': {}}), isNull);
+      expect(TmdbRefs.dondeVerDe(null), isNull);
+    });
+
+    test('los estrenos se ordenan por día y hora (sin hora al final)', () {
+      EntradaCalendario e(String dia, String hora) => EntradaCalendario(
+        tipo: 'serie',
+        fuente: 'tvmaze',
+        id: 1,
+        titulo: '$dia $hora',
+        hora: hora,
+        claveDia: dia,
+      );
+      final lista = [
+        e('2026-10-26', '09:00'),
+        e('2026-10-25', ''),
+        e('2026-10-25', '23:00'),
+      ]..sort(compararEstrenos);
+      expect(lista.map((x) => x.titulo), [
+        '2026-10-25 23:00',
+        '2026-10-25 ',
+        '2026-10-26 09:00',
+      ]);
     });
   });
 

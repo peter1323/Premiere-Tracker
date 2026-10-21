@@ -31,6 +31,7 @@ class SerieModel {
   final List<String> generos; // p. ej. Acción, Aventura...
   final List<String> canales; // canales/redes donde se emite
   final List<RepartoModel> reparto;
+  final DondeVer? dondeVer; // plataformas en España (solo TMDB)
 
   const SerieModel({
     required this.id,
@@ -47,6 +48,7 @@ class SerieModel {
     this.generos = const [],
     this.canales = const [],
     this.reparto = const [],
+    this.dondeVer,
   });
 
   /// Año de estreno, o null si no hay fecha.
@@ -81,6 +83,7 @@ class SerieModel {
       generos: generos ?? this.generos,
       canales: canales ?? this.canales,
       reparto: reparto ?? this.reparto,
+      dondeVer: dondeVer,
     );
   }
 
@@ -114,6 +117,7 @@ class SerieModel {
       generos: TmdbRefs.nombresDeLista(json['genres']),
       canales: TmdbRefs.nombresDeLista(json['networks']),
       reparto: TmdbRefs.repartoDeCredits(json['credits']),
+      dondeVer: TmdbRefs.dondeVerDe(json['watch/providers']),
       temporadas: (json['seasons'] as List<dynamic>? ?? [])
           .map((s) => TemporadaModel.fromTmdb(s as Map<String, dynamic>))
           .toList(),
@@ -275,6 +279,14 @@ class TemporadaModel {
   }
 }
 
+/// Dónde ver una obra en España (datos de JustWatch que da TMDB):
+/// [enlace] a la página de TMDB con todas las opciones y las
+/// [plataformas] con su nombre y logo.
+typedef DondeVer = ({
+  String enlace,
+  List<({String nombre, String? logo})> plataformas,
+});
+
 /// Utilidades compartidas de TMDB para los modelos: URLs de imágenes
 /// y lecturas de la respuesta de detalle (géneros, redes, reparto).
 class TmdbRefs {
@@ -298,6 +310,28 @@ class TmdbRefs {
       if (nombre.isNotEmpty) nombres.add(nombre);
     }
     return nombres;
+  }
+
+  /// Plataformas de streaming en España ("watch/providers", anexado al
+  /// detalle): de suscripción, gratis o con anuncios, sin repetir.
+  /// null si no hay ninguna (no se muestra la sección).
+  // shortcut: región fija España; cambiar 'ES' si hay usuarios de fuera.
+  static DondeVer? dondeVerDe(dynamic json) {
+    final resultados = json is Map<String, dynamic> ? json['results'] : null;
+    final es = resultados is Map<String, dynamic> ? resultados['ES'] : null;
+    if (es is! Map<String, dynamic>) return null;
+    final ids = <int>{};
+    final plataformas = [
+      for (final tipo in ['flatrate', 'free', 'ads'])
+        for (final p in es[tipo] as List? ?? const [])
+          if (p is Map<String, dynamic> && ids.add(p['provider_id'] as int? ?? 0))
+            (
+              nombre: p['provider_name'] as String? ?? '',
+              logo: urlImagen(p['logo_path'] as String?, tamano: 'w92'),
+            ),
+    ];
+    if (plataformas.isEmpty) return null;
+    return (enlace: es['link'] as String? ?? '', plataformas: plataformas);
   }
 
   /// Reparto de TMDB: "credits" (append_to_response=credits, solo los
