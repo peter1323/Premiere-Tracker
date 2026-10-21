@@ -4,11 +4,12 @@
 
 <h1 align="center">Premiere Tracker</h1>
 
-Aplicación de escritorio para Windows desarrollada con Flutter y Dart en Android Studio. Sirve para buscar películas, series y personas, ver cuándo se estrenan las películas y cuándo salen las temporadas y los episodios de las series (incluidas las que emiten semana a semana), buscar mangas, manhwas, manhuas y novelas con su ficha y sus últimos capítulos, y llevar un seguimiento personal: favoritos, vistos/leídos y notas de dónde se dejó cada cosa.
+Aplicación multiplataforma para Windows y Android desarrollada con Flutter y Dart en Android Studio. Sirve para buscar películas, series y personas, ver cuándo se estrenan las películas y cuándo salen las temporadas y los episodios de las series (incluidas las que emiten semana a semana), buscar mangas, manhwas, manhuas y novelas con su ficha y sus últimos capítulos, y llevar un seguimiento personal: favoritos, vistos/leídos y notas de dónde se dejó cada cosa.
 
 ## Funcionalidades
 
 - **Usuarios locales con PIN**: cada usuario tiene su propio perfil con un PIN de 4 dígitos cifrado con SHA-256 (nunca en texto plano) y sus propios favoritos, vistos, notas, tema e idioma. Se entra automáticamente al escribir los 4 dígitos; si el PIN está mal se avisa y se limpia el campo, y **tras dos fallos aparece una pista con los dos primeros dígitos**. Desde el propio diálogo de acceso también se puede **cambiar el PIN** (validando antes el actual). El tema elegido se recuerda también en la pantalla de usuarios.
+- **Clave TMDB configurable**: la clave de TMDB se introduce desde la propia app (pantalla de usuarios → «Clave TMDB», con botón para obtenerla) y se guarda en el dispositivo; por eso las versiones compiladas (`.exe` y APK) **no llevan ninguna clave embebida** y cada persona usa la suya.
 - **Búsqueda global anti-fallos**: una sola caja busca **series, películas y personas a la vez** (en paralelo, con tiempos de espera de 10 s). Si una API falla, la otra sigue funcionando y se muestra un aviso claro; si fallan las dos, se avisa de "Sin conexión o servicios no disponibles". Los resultados aparecen en tarjetas con botones de favorito ❤️ y visto 👁️.
 - **Selector de fuente TMDB | TVMaze**: en las series se puede cambiar entre las dos fuentes; se enlazan entre sí mediante el ID de IMDb. Si una fuente no está disponible, su opción queda desactivada.
 - **Detalle de series y películas**: póster, sinopsis, estado (en emisión, finalizada, cancelada...), fecha de estreno, géneros, puntuación, temporadas desplegables con sus episodios (número, título y fecha), el próximo episodio destacado y el **reparto con cada actor pulsable** (abre su ficha). Incluye los botones "Añadir a favoritos" y "Añadir a vistos".
@@ -23,14 +24,13 @@ Aplicación de escritorio para Windows desarrollada con Flutter y Dart en Androi
 - **Vistos**: misma búsqueda y filtro que favoritos, con el botón 👁️ para apuntar qué ya has visto (para los mangas se usa como **leídos**).
 - **Notas**: tabla de tres columnas (**Título | Última vista | Más datos**) para recordar dónde se dejó cada serie o película; solo el título es obligatorio, con buscador, edición y borrado; las notas recientes aparecen primero.
 - **Ajustes**: idioma (español / inglés), tema (claro / oscuro), copia de seguridad (exportar e importar **favoritos, vistos y notas** a un `.json` —incluidos los mangas y novelas guardados—, compatible con copias antiguas que solo tenían favoritos), gestión de usuarios (cambiar nombre, cambiar PIN y borrar usuario) y créditos.
-- **Interfaz**: menú lateral fijo (Inicio, Lectura, Calendario, Favoritos, Vistos, Notas y Ajustes), barra superior con interruptor de tema y menú de usuario, diseño Material 3 con tema claro y oscuro adaptable al redimensionar, y ventana que **arranca maximizada**.
+- **Interfaz**: navegación lateral fija en Windows e inferior en móvil (Inicio, Lectura, Calendario, Favoritos, Vistos, Notas y Ajustes), barra superior con interruptor de tema y menú de usuario, diseño Material 3 con tema claro y oscuro adaptable al redimensionar (vertical y horizontal), y en Windows la ventana **arranca maximizada**.
 
 ## Tecnologías
 
-- **Flutter / Dart** (escritorio, Windows)
+- **Flutter / Dart** (Windows y Android)
 - **provider** – estado global (MVC con `ChangeNotifier`)
 - **http** – peticiones a las APIs
-- **flutter_dotenv** – lectura de la API key desde `.env`
 - **shared_preferences** – almacenamiento local en formato JSON
 - **crypto** – cifrado SHA-256 de los PIN
 - **file_picker** – exportar / importar copias de seguridad
@@ -68,31 +68,17 @@ Cada vista tiene su controlador con el mismo nombre (`usuarios_view.dart` ↔ `u
 1. **Consigue tu API key de TMDB** (gratis):
    - Crea una cuenta en https://www.themoviedb.org/
    - Ve a *Settings → API* y solicita una clave (tipo "Developer").
-2. **Crea el archivo `.env`** a partir de la plantilla:
-
-   En PowerShell (o bash):
-   ```bash
-   cp .env.example .env
-   ```
-
-   En el CMD clásico de Windows:
-   ```bat
-   copy .env.example .env
-   ```
-
-3. **Pon tu clave en `.env`** El .env va en la misma carpeta que pubspec.yaml, no dentro de lib/:
-   ```
-   TMDB_API_KEY=TU_CLAVE_AQUI
-   ```
-   (El `.env` está en `.gitignore` y nunca se sube al repositorio.)
-4. **Instala las dependencias**:
+2. **Instala las dependencias**:
    ```bash
    flutter pub get
    ```
-5. **Ejecuta la app**:
+3. **Ejecuta la app**:
    ```bash
    flutter run -d windows
    ```
+   (En Android, con el móvil conectado: `flutter run -d android`.)
+4. **Introduce tu clave TMDB en la app**: en la pantalla de usuarios, sección «Clave TMDB» (hay un botón para obtenerla si aún no la tienes). Se guarda en el dispositivo y ya no hace falta configurar nada más.
+
    > Nota: para compilar en Windows puede ser necesario activar el *Modo de desarrollador* de Windows (*Configuración → Sistema → Para programadores*).
 
 Si la API key falta o es incorrecta, la app muestra un aviso claro en lugar de cerrarse.
@@ -115,9 +101,25 @@ build\windows\x64\runner\Release\premiere_tracker.exe
 
 Para usar la app en otro ordenador hay que copiar la **carpeta completa `Release`** (el `.exe`, los archivos `.dll` y la carpeta `data`), no solo el `.exe`.
 
+## Cómo compilar el APK (Android)
+
+```bash
+flutter clean
+flutter pub get
+flutter build apk --release
+```
+
+El APK se genera en:
+
+```
+build\app\outputs\apk\release\Premiere-Tracker.apk
+```
+
+Se instala en el móvil copiando el archivo o con `flutter install`. **El APK no lleva ninguna clave TMDB embebida**: cada persona que lo instale debe introducir su propia clave en la app (pantalla de usuarios → «Clave TMDB»).
+
 ## Icono de la app
 
-El icono (exe y barra de títulos) sale de `windows/runner/resources/app_icon.ico`. Para cambiarlo, sustituye ese archivo por un `.ico` multiresolución (16–256 px) y vuelve a compilar. Si el Explorador de Windows se queda con el icono antiguo, refresca su caché con:
+En Windows, el icono (exe y barra de títulos) sale de `windows/runner/resources/app_icon.ico`. Para cambiarlo, sustituye ese archivo por un `.ico` multiresolución (16–256 px) y vuelve a compilar. En Android, el icono se genera con flutter_launcher_icons a partir de `tool/app_icon_256.png`. Si el Explorador de Windows se queda con el icono antiguo, refresca su caché con:
 
 ```bash
 ie4uinit -show
