@@ -222,6 +222,19 @@ void main() {
     await esperar(find.byType(BackButton));
     await pulsar(find.byType(BackButton));
 
+    // También en Semana (en Android es la lista por días): sale el domingo
+    // y se abre su ficha al pulsarlo
+    await pulsar(
+      find.descendant(
+        of: find.byType(SegmentedButton<String>).first,
+        matching: find.byIcon(Icons.view_week_outlined),
+      ),
+    );
+    await esperar(episodioDbs);
+    await pulsar(episodioDbs);
+    await esperar(find.byType(BackButton));
+    await pulsar(find.byType(BackButton));
+
     // --- 6. Ajustes: idioma y tema ---
     await ir('Ajustes');
     await pulsar(find.text('English'));

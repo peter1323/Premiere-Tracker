@@ -3,6 +3,7 @@
 // oscuro de la app. Lo usa calendario_view.dart y le pasa las entradas ya
 // calculadas por CalendarioController (solo series y películas).
 import 'package:calendar_view/calendar_view.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../controllers/calendario_controller.dart';
@@ -286,7 +287,7 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
                 ...cabecera,
                 // El Año lleva su altura natural: su rejilla no scrollea
                 // sola y la página se encarga de subir y bajar.
-                if (widget.modo == 'anio')
+                if (widget.modo == 'anio' || _listaEnMovil)
                   contenido
                 else
                   SizedBox(height: 340, child: contenido),
@@ -309,6 +310,9 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
   /// [paginaScrollea] indica si la página entera se desplaza (móvil
   /// horizontal); solo lo usa la vista de año.
   Widget _vista({required bool paginaScrollea}) {
+    // Android: Día y Semana como lista por días (la rejilla de 24 horas no
+    // cabe y las horas salían aplastadas). Windows sigue con la rejilla.
+    if (_listaEnMovil) return _vistaLista(paginaScrollea: paginaScrollea);
     switch (widget.modo) {
       case 'dia':
         // LayoutBuilder: la densidad se calcula para que las 24 horas
@@ -473,6 +477,162 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
         width: ancho,
         height: caja.maxHeight,
         child: vista(ancho),
+      ),
+    );
+  }
+
+  /// true en Android con Día o Semana: se usa la lista por días.
+  bool get _listaEnMovil =>
+      defaultTargetPlatform == TargetPlatform.android &&
+      (widget.modo == 'dia' || widget.modo == 'semana');
+
+  /// Día y Semana en Android: barra morada con flechas y, debajo, la lista
+  /// de estrenos de cada día (el día visible, o los 7 de la semana), con
+  /// su hora si la hay. Con [paginaScrollea] (horizontal) la lista va a su
+  /// altura natural y es la página la que se desliza.
+  Widget _vistaLista({required bool paginaScrollea}) {
+    final esquema = Theme.of(context).colorScheme;
+    final esSemana = widget.modo == 'semana';
+    final inicio = widget.fechaVisible;
+    final dias = [
+      for (var i = 0; i < (esSemana ? 7 : 1); i++)
+        DateTime(inicio.year, inicio.month, inicio.day + i),
+    ];
+    final paso = esSemana ? 7 : 1;
+    final anterior = DateTime(inicio.year, inicio.month, inicio.day - paso);
+    final siguiente = DateTime(inicio.year, inicio.month, inicio.day + paso);
+    final colorEvento = widget.pestana == 'series'
+        ? esquema.primary
+        : esquema.tertiary;
+    final porDia = widget.pestana == 'series'
+        ? widget.seriesPorDia
+        : widget.peliculasPorDia;
+    final hoy = _claveDe(DateTime.now());
+
+    final filas = <Widget>[
+      for (final dia in dias) ...[
+        // En Semana, cabecera de cada día ("Lun 19/10/2026"); hoy resaltado
+        if (esSemana)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 12, 4, 4),
+            child: Text(
+              _tituloDia(dia),
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: _claveDe(dia) == hoy
+                    ? esquema.primary
+                    : esquema.onSurface,
+              ),
+            ),
+          ),
+        for (final e in _entradasOrdenadas(porDia[_claveDe(dia)]))
+          _filaEntrada(e, colorEvento),
+        if ((porDia[_claveDe(dia)] ?? const []).isEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+            child: Text(
+              t('sinEstrenos', widget.idioma),
+              style: TextStyle(color: esquema.outline),
+            ),
+          ),
+      ],
+      const SizedBox(height: 8),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Barra morada con flechas, igual que la del mes
+        Container(
+          color: esquema.primary,
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            children: [
+              IconButton(
+                onPressed: anterior.isBefore(_limiteInferior)
+                    ? null
+                    : () => widget.onFecha(anterior),
+                icon: Icon(Icons.chevron_left, color: esquema.onPrimary),
+              ),
+              Expanded(
+                child: Text(
+                  esSemana ? _tituloSemana(inicio) : _tituloDia(inicio),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: esquema.onPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: siguiente.isAfter(_limiteSuperior)
+                    ? null
+                    : () => widget.onFecha(siguiente),
+                icon: Icon(Icons.chevron_right, color: esquema.onPrimary),
+              ),
+            ],
+          ),
+        ),
+        if (paginaScrollea)
+          ...filas
+        else
+          Expanded(child: ListView(children: filas)),
+      ],
+    );
+  }
+
+  /// Entradas de un día ordenadas por hora (las que no tienen, al final).
+  List<EntradaCalendario> _entradasOrdenadas(List<EntradaCalendario>? lista) {
+    final copia = [...?lista];
+    copia.sort((a, b) {
+      if (a.hora.isEmpty != b.hora.isEmpty) return a.hora.isEmpty ? 1 : -1;
+      return a.hora.compareTo(b.hora);
+    });
+    return copia;
+  }
+
+  /// Fila de un estreno en la lista: hora (si la hay) y "T1E3 · Título".
+  /// Al pulsarla se abre su ficha.
+  Widget _filaEntrada(EntradaCalendario entrada, Color color) {
+    final colorTexto = _textoClaro(color) ? Colors.white : Colors.black87;
+    final titulo = entrada.etiqueta.isNotEmpty
+        ? '${entrada.etiqueta} · ${entrada.titulo}'
+        : entrada.titulo;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Material(
+        color: color,
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () => widget.onAbrirEntrada(entrada),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                if (entrada.hora.isNotEmpty) ...[
+                  Text(
+                    entrada.hora,
+                    style: TextStyle(
+                      color: colorTexto,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+                Expanded(
+                  child: Text(
+                    titulo,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: colorTexto),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
