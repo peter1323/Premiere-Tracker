@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="354" viewBox="0 0 900 354" font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+  <title>Idea: avisos de capítulo nuevo de manga</title>
+  <desc>Al abrir la app se consulta MangaDex, se compara con el último capítulo guardado y se avisa con una notificación, una lista de novedades en Inicio y una insignia en Favoritos.</desc>
+  <rect width="900" height="354" rx="16" fill="#F6F4FB"/>
+
+  <!-- Proceso -->
+  <g font-size="13" fill="#3C3489">
+    <rect x="24" y="24" width="150" height="34" rx="8" fill="#EEEDFE"/>
+    <text x="99" y="46" text-anchor="middle">Abres la app</text>
+    <text x="190" y="46" text-anchor="middle" fill="#7F77DD">→</text>
+    <rect x="206" y="24" width="160" height="34" rx="8" fill="#EEEDFE"/>
+    <text x="286" y="46" text-anchor="middle">Consulta MangaDex</text>
+    <text x="382" y="46" text-anchor="middle" fill="#7F77DD">→</text>
+    <rect x="398" y="24" width="300" height="34" rx="8" fill="#EEEDFE"/>
+    <text x="548" y="46" text-anchor="middle">Guardado: cap. 1130 · ahora: cap. 1131</text>
+    <text x="714" y="46" text-anchor="middle" fill="#7F77DD">→</text>
+    <rect x="730" y="24" width="146" height="34" rx="8" fill="#534AB7"/>
+    <text x="803" y="46" text-anchor="middle" fill="#FFFFFF">Te avisa</text>
+  </g>
+
+  <!-- 1. Notificación -->
+  <g>
+    <rect x="24" y="80" width="272" height="250" rx="12" fill="#ECEAF3"/>
+    <text x="40" y="106" font-size="13" fill="#5F5E5A">1. Notificación del móvil</text>
+    <rect x="40" y="120" width="240" height="96" rx="12" fill="#FFFFFF" stroke="#D3D1C7"/>
+    <text x="56" y="144" font-size="12" fill="#5F5E5A">Premiere Tracker · ahora</text>
+    <text x="56" y="170" font-size="15" font-weight="600" fill="#2C2C2A">Nuevo capítulo</text>
+    <text x="56" y="194" font-size="13" fill="#2C2C2A">Capítulo 1131 de ONE PIECE (español)</text>
+    <text x="40" y="244" font-size="12" fill="#888780">Al tocarla se abre la ficha del manga.</text>
+  </g>
+
+  <!-- 2. Novedades -->
+  <g>
+    <rect x="314" y="80" width="272" height="250" rx="12" fill="#ECEAF3"/>
+    <text x="330" y="106" font-size="13" fill="#5F5E5A">2. Inicio → Novedades</text>
+    <rect x="330" y="120" width="240" height="160" rx="12" fill="#FFFFFF" stroke="#D3D1C7"/>
+    <text x="346" y="146" font-size="15" font-weight="600" fill="#2C2C2A">Novedades (7 días)</text>
+    <g font-size="12" fill="#3C3489">
+      <rect x="346" y="158" width="208" height="30" rx="7" fill="#EEEDFE"/>
+      <text x="356" y="178"><tspan font-weight="600">Hoy</tspan> · Cap. 1131 · ONE PIECE · ES</text>
+      <rect x="346" y="196" width="208" height="30" rx="7" fill="#EEEDFE"/>
+      <text x="356" y="216"><tspan font-weight="600">Ayer</tspan> · Cap. 212 · Solo Leveling · EN</text>
+      <rect x="346" y="234" width="208" height="30" rx="7" fill="#EEEDFE"/>
+      <text x="356" y="254"><tspan font-weight="600">Lun</tspan> · Cap. 340 · Kingdom · ES-LA</text>
+    </g>
+    <text x="330" y="308" font-size="12" fill="#888780">Capítulos ya publicados, no fechas futuras.</text>
+  </g>
+
+  <!-- 3. Favoritos -->
+  <g>
+    <rect x="604" y="80" width="272" height="250" rx="12" fill="#ECEAF3"/>
+    <text x="620" y="106" font-size="13" fill="#5F5E5A">3. En Favoritos</text>
+    <rect x="620" y="120" width="180" height="180" rx="12" fill="#FFFFFF" stroke="#D3D1C7"/>
+    <rect x="620" y="120" width="180" height="90" rx="12" fill="#D3D1C7"/>
+    <rect x="620" y="198" width="180" height="12" fill="#D3D1C7"/>
+    <text x="710" y="170" text-anchor="middle" font-size="13" fill="#5F5E5A">Portada</text>
+    <text x="634" y="234" font-size="14" font-weight="600" fill="#2C2C2A">ONE PIECE</text>
+    <rect x="634" y="246" width="124" height="22" rx="6" fill="#EEEDFE"/>
+    <text x="642" y="261" font-size="11" fill="#3C3489">✦ Nuevo: cap. 1131</text>
+    <rect x="634" y="272" width="80" height="20" rx="6" fill="#ECEAF3"/>
+    <text x="642" y="286" font-size="11" fill="#5F5E5A">En emisión</text>
+    <text x="620" y="322" font-size="12" fill="#888780">La insignia se quita al abrir la ficha.</text>
+  </g>
+</svg>
