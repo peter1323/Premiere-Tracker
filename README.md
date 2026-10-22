@@ -175,7 +175,7 @@ La ficha de cada manga ya muestra el último capítulo publicado en tres idiomas
 - **Cómo funcionaría:** la app apunta, para cada manga de Favoritos, el último capítulo que conoce en cada idioma. Al abrirla (y en Windows también cada hora, como los avisos de estreno) pregunta a MangaDex; si hay un número mayor, es un capítulo nuevo.
 - **Cómo se vería:** una notificación («Capítulo 1131 de ONE PIECE (español)»), una lista de **Novedades** en Inicio con lo publicado estos días y una insignia «Nuevo» en la tarjeta de Favoritos. Se podría elegir solo una o dos de las tres.
 - **Límites:** solo avisa de capítulos **ya publicados**, no de cuándo saldrá el siguiente (ni MangaDex ni AniList dan fechas futuras de manga). Con la app cerrada no comprueba nada, así que en el móvil el aviso llega al abrirla. Y depende de que MangaDex tenga ese manga en ese idioma.
-- **Coste:** poco código y ninguna clave nueva, porque reutiliza los datos de MangaDex que la ficha ya consulta.
+- **Coste:** poco código y ninguna clave nueva, reutiliza los datos de MangaDex que la ficha ya usa.
 
 ## Créditos
 
