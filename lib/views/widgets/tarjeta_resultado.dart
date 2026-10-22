@@ -1,8 +1,8 @@
-// WIDGET de tarjeta para un resultado de serie o película. Muestra el
-// póster, el título y el año, y lleva dos botones: añadir/quitar de
-// favoritos y marcar como visto (o quitar de vistos). Los botones solo
-// avisan con onFavorito()/onVisto(); quién guarda es la vista que la usa
-// (Inicio, Favoritos o Vistos).
+// WIDGET de tarjeta para un resultado (serie, película, manga o persona).
+// Muestra la imagen, el título, el año, insignias opcionales (estado,
+// nota, cuenta atrás) y dos botones: favoritos y visto (este último se
+// omite en personas). Los botones solo avisan con onFavorito()/onVisto();
+// quién guarda es la vista que la usa (Inicio, Favoritos o Vistos).
 import 'package:flutter/material.dart';
 
 /// Tarjeta de un resultado: póster, título, año y botones de favoritos
@@ -15,8 +15,10 @@ class TarjetaResultado extends StatelessWidget {
   final bool esFavorito;
   final VoidCallback onFavorito;
   final bool esVisto;
-  final VoidCallback onVisto;
+  final VoidCallback? onVisto; // null: sin botón de visto (personas)
   final VoidCallback onAbrir;
+  final List<Widget> insignias; // estado, nota, cuenta atrás...
+  final IconData iconoMarcador; // icono si no hay imagen
 
   const TarjetaResultado({
     super.key,
@@ -26,7 +28,9 @@ class TarjetaResultado extends StatelessWidget {
     required this.esFavorito,
     required this.onFavorito,
     required this.esVisto,
-    required this.onVisto,
+    this.onVisto,
+    this.insignias = const [],
+    this.iconoMarcador = Icons.movie_outlined,
     required this.onAbrir,
   });
 
@@ -88,19 +92,26 @@ class TarjetaResultado extends StatelessWidget {
                       onPressed: onFavorito,
                     ),
                     // Botón de marcar como visto / quitar de vistos
-                    IconButton(
-                      visualDensity: VisualDensity.compact,
-                      icon: Icon(
-                        esVisto
-                            ? Icons.visibility
-                            : Icons.visibility_outlined,
-                        color: esVisto ? esquema.primary : null,
+                    if (onVisto != null)
+                      IconButton(
+                        visualDensity: VisualDensity.compact,
+                        icon: Icon(
+                          esVisto
+                              ? Icons.visibility
+                              : Icons.visibility_outlined,
+                          color: esVisto ? esquema.primary : null,
+                        ),
+                        onPressed: onVisto,
                       ),
-                      onPressed: onVisto,
-                    ),
                   ],
                 ),
               ),
+              // Insignias (estado, nota, cuenta atrás) si las hay
+              if (insignias.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+                  child: Wrap(spacing: 4, runSpacing: 4, children: insignias),
+                ),
             ],
           ),
         ),
@@ -113,7 +124,7 @@ class TarjetaResultado extends StatelessWidget {
     return Container(
       color: esquema.surfaceContainerHighest,
       alignment: Alignment.center,
-      child: Icon(Icons.movie_outlined, size: 48, color: esquema.outline),
+      child: Icon(iconoMarcador, size: 48, color: esquema.outline),
     );
   }
 }

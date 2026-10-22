@@ -65,50 +65,70 @@ class TmdbService {
     }
   }
 
+  /// Lista "results" de TMDB convertida con [desde]: la usan las
+  /// búsquedas y las recomendaciones (todas devuelven el mismo formato).
+  static Future<List<T>> _resultados<T>(
+    String ruta,
+    Map<String, String> parametros,
+    T Function(Map<String, dynamic>) desde,
+  ) async {
+    final json = await _get(ruta, parametros: parametros);
+    final resultados = json['results'] as List<dynamic>? ?? [];
+    return resultados.map((r) => desde(r as Map<String, dynamic>)).toList();
+  }
+
   /// Busca series en TMDB (/search/tv).
   static Future<List<SerieModel>> buscarSeries(
     String consulta,
     String language,
-  ) async {
-    final json = await _get(
-      '/search/tv',
-      parametros: {'query': consulta, 'language': language},
-    );
-    final resultados = json['results'] as List<dynamic>? ?? [];
-    return resultados
-        .map((r) => SerieModel.fromTmdbBusqueda(r as Map<String, dynamic>))
-        .toList();
-  }
+  ) => _resultados('/search/tv', {
+    'query': consulta,
+    'language': language,
+  }, SerieModel.fromTmdbBusqueda);
 
   /// Busca películas en TMDB (/search/movie).
   static Future<List<PeliculaModel>> buscarPeliculas(
     String consulta,
     String language,
-  ) async {
-    final json = await _get(
-      '/search/movie',
-      parametros: {'query': consulta, 'language': language},
-    );
-    final resultados = json['results'] as List<dynamic>? ?? [];
-    return resultados
-        .map((r) => PeliculaModel.fromTmdbBusqueda(r as Map<String, dynamic>))
-        .toList();
-  }
+  ) => _resultados('/search/movie', {
+    'query': consulta,
+    'language': language,
+  }, PeliculaModel.fromTmdbBusqueda);
 
   /// Busca personas (actores, directores...) en TMDB (/search/person).
   static Future<List<PersonaModel>> buscarPersonas(
     String consulta,
     String language,
-  ) async {
-    final json = await _get(
-      '/search/person',
-      parametros: {'query': consulta, 'language': language},
-    );
-    final resultados = json['results'] as List<dynamic>? ?? [];
-    return resultados
-        .map((r) => PersonaModel.fromTmdbBusqueda(r as Map<String, dynamic>))
-        .toList();
-  }
+  ) => _resultados('/search/person', {
+    'query': consulta,
+    'language': language,
+  }, PersonaModel.fromTmdbBusqueda);
+
+  // Caché de recomendaciones: reabrir una ficha no repite la petición.
+  static final _cacheRecomendaciones = CacheFuturos();
+
+  /// Series recomendadas para la serie [id] (/tv/{id}/recommendations).
+  static Future<List<SerieModel>> recomendacionesSerie(
+    int id,
+    String language,
+  ) => _cacheRecomendaciones.obtener(
+    'tv-$id-$language',
+    () => _resultados('/tv/$id/recommendations', {
+      'language': language,
+    }, SerieModel.fromTmdbBusqueda),
+  );
+
+  /// Películas recomendadas para la película [id]
+  /// (/movie/{id}/recommendations).
+  static Future<List<PeliculaModel>> recomendacionesPelicula(
+    int id,
+    String language,
+  ) => _cacheRecomendaciones.obtener(
+    'movie-$id-$language',
+    () => _resultados('/movie/$id/recommendations', {
+      'language': language,
+    }, PeliculaModel.fromTmdbBusqueda),
+  );
 
   /// Ficha de una persona (/person/{id}): biografía, nacimiento,
   /// lugar y también el IMDb anexado (external_ids) como puente.

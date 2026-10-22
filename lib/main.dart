@@ -20,6 +20,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'controllers/app_controller.dart';
+import 'controllers/avisos_controller.dart';
 import 'controllers/usuarios_controller.dart';
 import 'l10n/app_strings.dart';
 import 'services/avisos_service.dart';
@@ -196,6 +197,21 @@ class _VistaPrincipalProvisionalState
   // Índices del IndexedStack (y de los menús): 0 Inicio, 1 Lectura,
   // 2 Calendario, 3 Favoritos, 4 Vistos, 5 Notas y 6 Ajustes.
   int _indice = 0;
+
+  // Notificaciones de escritorio (solo Windows) mientras dure la sesión
+  late final AvisosController _avisos;
+
+  @override
+  void initState() {
+    super.initState();
+    _avisos = AvisosController(context.read<AppController>())..iniciar();
+  }
+
+  @override
+  void dispose() {
+    _avisos.detener();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

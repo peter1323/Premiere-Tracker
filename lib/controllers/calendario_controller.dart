@@ -49,7 +49,8 @@ class CalendarioController extends ChangeNotifier {
   ]..sort(compararEstrenos);
 
   /// Primer y último día ('yyyy-MM-dd') del periodo visible según el modo.
-  (String, String) get _rangoVisible => _rangoDe(_modoCalendario, _fechaVisible);
+  (String, String) get _rangoVisible =>
+      _rangoDe(_modoCalendario, _fechaVisible);
 
   /// Rango de días ('inicio', 'fin') que cubre el modo y la fecha dados.
   static (String, String) _rangoDe(String modo, DateTime fecha) {
@@ -67,12 +68,17 @@ class CalendarioController extends ChangeNotifier {
           claveDia(DateTime(fecha.year, fecha.month, fecha.day + 6)),
         );
       case 'anio':
-        return (claveDia(DateTime(fecha.year, 1, 1)),
-            claveDia(DateTime(fecha.year, 12, 31)));
+        return (
+          claveDia(DateTime(fecha.year, 1, 1)),
+          claveDia(DateTime(fecha.year, 12, 31)),
+        );
       case 'semana':
       default:
-        final lunes =
-            DateTime(fecha.year, fecha.month, fecha.day - (fecha.weekday - 1));
+        final lunes = DateTime(
+          fecha.year,
+          fecha.month,
+          fecha.day - (fecha.weekday - 1),
+        );
         return (
           claveDia(lunes),
           claveDia(DateTime(lunes.year, lunes.month, lunes.day + 6)),
@@ -92,13 +98,19 @@ class CalendarioController extends ChangeNotifier {
         return DateTime(fecha.year, 1, 1);
       case 'semana':
       default:
-        return DateTime(fecha.year, fecha.month, fecha.day - (fecha.weekday - 1));
+        return DateTime(
+          fecha.year,
+          fecha.month,
+          fecha.day - (fecha.weekday - 1),
+        );
     }
   }
 
   /// Guarda los favoritos y recarga el calendario solo si algo cambió.
   Future<void> syncFavoritos(
-      List<FavoritoModel> favoritos, String language) async {
+    List<FavoritoModel> favoritos,
+    String language,
+  ) async {
     // Solo series y películas: los mangas y novelas no van al calendario
     favoritos = favoritos
         .where((f) => f.tipo == 'serie' || f.tipo == 'pelicula')
@@ -216,7 +228,10 @@ class CalendarioController extends ChangeNotifier {
 
   /// Episodios de una serie favorita que caen en el rango visible.
   Future<List<EntradaCalendario>> _entradasSerie(
-      FavoritoModel fav, String claveInicio, String claveFin) async {
+    FavoritoModel fav,
+    String claveInicio,
+    String claveFin,
+  ) async {
     List<EpisodioModel> episodios = const [];
     try {
       episodios = await _episodiosTvmaze(fav);
@@ -228,8 +243,11 @@ class CalendarioController extends ChangeNotifier {
     // Sin reparto: el calendario solo necesita la fecha.
     if (episodios.isEmpty && fav.fuente == 'tmdb') {
       try {
-        final serie =
-            await TmdbService.obtenerSerie(fav.id, _language, conReparto: false);
+        final serie = await TmdbService.obtenerSerie(
+          fav.id,
+          _language,
+          conReparto: false,
+        );
         final proximo = serie.proximoEpisodio;
         if (proximo != null && proximo.fechaEmision.isNotEmpty) {
           episodios = [proximo];
@@ -240,21 +258,25 @@ class CalendarioController extends ChangeNotifier {
     }
 
     return episodios
-        .where((e) =>
-            e.fechaEmision.isNotEmpty &&
-            e.fechaEmision.compareTo(claveInicio) >= 0 &&
-            e.fechaEmision.compareTo(claveFin) <= 0)
-        .map((e) => EntradaCalendario(
-              tipo: 'serie',
-              fuente: fav.fuente,
-              id: fav.id,
-              imdbId: fav.imdbId,
-              titulo: fav.titulo,
-              etiqueta: e.etiqueta,
-              hora: e.horaEmision,
-              posterUrl: fav.posterUrl,
-              claveDia: e.fechaEmision,
-            ))
+        .where(
+          (e) =>
+              e.fechaEmision.isNotEmpty &&
+              e.fechaEmision.compareTo(claveInicio) >= 0 &&
+              e.fechaEmision.compareTo(claveFin) <= 0,
+        )
+        .map(
+          (e) => EntradaCalendario(
+            tipo: 'serie',
+            fuente: fav.fuente,
+            id: fav.id,
+            imdbId: fav.imdbId,
+            titulo: fav.titulo,
+            etiqueta: e.etiqueta,
+            hora: e.horaEmision,
+            posterUrl: fav.posterUrl,
+            claveDia: e.fechaEmision,
+          ),
+        )
         .toList();
   }
 
@@ -280,14 +302,20 @@ class CalendarioController extends ChangeNotifier {
 
   /// Estreno de una película favorita dentro de la semana visible.
   Future<EntradaCalendario?> _entradaPelicula(
-      FavoritoModel fav, String claveInicio, String claveFin) async {
+    FavoritoModel fav,
+    String claveInicio,
+    String claveFin,
+  ) async {
     var fecha = fav.fechaEstreno;
     // Si el favorito no guardó la fecha, se pide a TMDB (sin reparto:
     // el calendario solo necesita la fecha).
     if (fecha.isEmpty && fav.fuente == 'tmdb') {
       try {
-        final pelicula = await TmdbService.obtenerPelicula(fav.id, _language,
-            conCreditos: false);
+        final pelicula = await TmdbService.obtenerPelicula(
+          fav.id,
+          _language,
+          conCreditos: false,
+        );
         fecha = pelicula.fechaEstreno;
       } catch (_) {
         return null;
@@ -352,4 +380,20 @@ int compararEstrenos(EntradaCalendario a, EntradaCalendario b) {
   if (porDia != 0) return porDia;
   if (a.hora.isEmpty != b.hora.isEmpty) return a.hora.isEmpty ? 1 : -1;
   return a.hora.compareTo(b.hora);
+}
+
+/// Días que faltan para [fecha] ('yyyy-MM-dd'): 0 si es hoy, null si no
+/// hay fecha o ya pasó. Es la base de la cuenta atrás de las tarjetas y
+/// de la ficha; [ahora] solo se pasa en los tests.
+int? diasParaEstreno(String fecha, [DateTime? ahora]) {
+  final dia = fecha.length >= 10 ? DateTime.tryParse(fecha) : null;
+  if (dia == null) return null;
+  final hoy = ahora ?? DateTime.now();
+  // En UTC para que un cambio de hora (verano/invierno) no reste un día
+  final dias = DateTime.utc(
+    dia.year,
+    dia.month,
+    dia.day,
+  ).difference(DateTime.utc(hoy.year, hoy.month, hoy.day)).inDays;
+  return dias < 0 ? null : dias;
 }

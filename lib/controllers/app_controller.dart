@@ -13,9 +13,13 @@ import '../models/favorito_model.dart';
 import '../models/manga_model.dart';
 import '../models/nota_model.dart';
 import '../models/pelicula_model.dart';
+import '../models/persona_model.dart';
 import '../models/serie_model.dart';
 import '../models/usuario_model.dart';
 import '../services/almacenamiento_service.dart';
+import '../services/anilist_service.dart';
+import '../services/tmdb_service.dart';
+import '../services/tvmaze_service.dart';
 
 /// Estado global de la app: usuario actual, tema, idioma y favoritos.
 class AppController extends ChangeNotifier {
@@ -109,6 +113,17 @@ class AppController extends ChangeNotifier {
     await AlmacenamientoService.guardarTemaGlobal(tema);
   }
 
+  /// ¿Están activadas las notificaciones de estreno? (por defecto, sí)
+  bool get avisosActivados => _usuarioActual?.avisos ?? true;
+
+  /// Activa o desactiva las notificaciones de estreno (Ajustes).
+  Future<void> cambiarAvisos(bool activados) async {
+    final usuario = _usuarioActual;
+    if (usuario == null) return;
+    _usuarioActual = usuario.copyWith(avisos: activados);
+    await _persistir();
+  }
+
   /// Cambia el idioma ('es' o 'en').
   Future<void> cambiarIdioma(String idioma) async {
     final usuario = _usuarioActual;
@@ -122,42 +137,52 @@ class AppController extends ChangeNotifier {
   static String _tituloNormalizado(String titulo) =>
       titulo.trim().toLowerCase();
 
-  /// ¿Está la obra en la lista? Además del id exacto, se compara por
-  /// título+tipo: la misma obra agregada desde TMDB y TVMaze tiene ids
-  /// distintos en cada fuente.
-  static bool _contiene(
+  /// Posición de la obra en la lista (-1 si no está). Primero por id
+  /// exacto y, si no, por título+tipo: la misma obra agregada desde TMDB
+  /// y TVMaze tiene ids distintos en cada fuente.
+  static int _indice(
     List<FavoritoModel> lista,
     String fuente,
     String tipo,
     int id,
     String? titulo,
   ) {
-    if (lista.any((f) => f.fuente == fuente && f.tipo == tipo && f.id == id)) {
-      return true;
-    }
-    if (titulo == null || titulo.isEmpty) return false;
+    final i = lista.indexWhere(
+      (f) => f.fuente == fuente && f.tipo == tipo && f.id == id,
+    );
+    if (i >= 0 || titulo == null || titulo.isEmpty) return i;
     final normalizado = _tituloNormalizado(titulo);
-    return lista.any(
+    return lista.indexWhere(
       (f) => f.tipo == tipo && _tituloNormalizado(f.titulo) == normalizado,
     );
   }
 
-  /// Añade la obra si no está; la quita si ya estaba. Si la misma obra
-  /// está desde la otra fuente (mismo título y tipo), se quita en lugar
-  /// de crear una entrada duplicada.
+  /// La entrada guardada de [item] en [lista], o null si no está.
+  static FavoritoModel? _encontrar(
+    List<FavoritoModel> lista,
+    FavoritoModel item,
+  ) {
+    final i = _indice(lista, item.fuente, item.tipo, item.id, item.titulo);
+    return i < 0 ? null : lista[i];
+  }
+
+  /// ¿Está la obra en la lista?
+  static bool _contiene(
+    List<FavoritoModel> lista,
+    String fuente,
+    String tipo,
+    int id,
+    String? titulo,
+  ) => _indice(lista, fuente, tipo, id, titulo) >= 0;
+
+  /// Añade la obra si no está; la quita si ya estaba (también si estaba
+  /// desde la otra fuente, en lugar de crear una entrada duplicada).
   static List<FavoritoModel> _alternar(
     List<FavoritoModel> lista,
     FavoritoModel item,
   ) {
     final nuevaLista = List<FavoritoModel>.from(lista);
-    var i = nuevaLista.indexWhere((f) => f.idUnico == item.idUnico);
-    if (i < 0) {
-      final normalizado = _tituloNormalizado(item.titulo);
-      i = nuevaLista.indexWhere(
-        (f) =>
-            f.tipo == item.tipo && _tituloNormalizado(f.titulo) == normalizado,
-      );
-    }
+    final i = _indice(nuevaLista, item.fuente, item.tipo, item.id, item.titulo);
     if (i >= 0) {
       nuevaLista.removeAt(i);
     } else {
@@ -175,6 +200,7 @@ class AppController extends ChangeNotifier {
     anio: serie.anio,
     posterUrl: serie.posterUrl,
     fechaEstreno: serie.fechaEstreno,
+    estado: FavoritoModel.estadoDeApi(serie.estado),
   );
 
   static FavoritoModel _dePelicula(PeliculaModel pelicula) => FavoritoModel(
@@ -185,6 +211,7 @@ class AppController extends ChangeNotifier {
     anio: pelicula.anio,
     posterUrl: pelicula.posterUrl,
     fechaEstreno: pelicula.fechaEstreno,
+    estado: FavoritoModel.estadoDeApi(pelicula.estado),
   );
 
   /// Convierte un manga de AniList en el favorito genérico que guarda la
@@ -199,6 +226,17 @@ class AppController extends ChangeNotifier {
         : null,
     posterUrl: manga.portada.isEmpty ? null : manga.portada,
     fechaEstreno: manga.fechaInicio,
+    estado: FavoritoModel.estadoDeApi(manga.estado),
+  );
+
+  /// Persona (actriz, actor...) como favorito: lo mínimo para pintar la
+  /// lista sin llamadas a la API (nombre y foto); la ficha se recarga.
+  static FavoritoModel _dePersona(PersonaModel persona) => FavoritoModel(
+    tipo: 'persona',
+    fuente: persona.fuente,
+    id: persona.id,
+    titulo: persona.nombre,
+    posterUrl: persona.fotoUrl,
   );
 
   /// Aplica un cambio a la lista de favoritos o de vistos y lo guarda.
@@ -229,9 +267,14 @@ class AppController extends ChangeNotifier {
   Future<void> alternarFavoritoDeManga(MangaModel manga) =>
       alternarFavorito(_deManga(manga));
 
+  Future<void> alternarFavoritoDePersona(PersonaModel persona) =>
+      alternarFavorito(_dePersona(persona));
+
   /// Añade el favorito si no existe; lo quita si ya estaba.
-  Future<void> alternarFavorito(FavoritoModel favorito) =>
-      _cambiarLista(false, (l) => _alternar(l, favorito));
+  Future<void> alternarFavorito(FavoritoModel favorito) => _cambiarLista(
+    false,
+    (l) => _alternar(l, _conValoracionDe(vistos, favorito)),
+  );
 
   /// Quita un favorito por su identificador único ('fuente-tipo-id').
   Future<void> quitarFavorito(String idUnico) => _cambiarLista(
@@ -255,12 +298,137 @@ class AppController extends ChangeNotifier {
       alternarVisto(_deManga(manga));
 
   /// Marca como vista si no lo estaba; la quita de vistos si ya lo era.
-  Future<void> alternarVisto(FavoritoModel visto) =>
-      _cambiarLista(true, (l) => _alternar(l, visto));
+  Future<void> alternarVisto(FavoritoModel visto) => _cambiarLista(
+    true,
+    (l) => _alternar(l, _conValoracionDe(favoritos, visto)),
+  );
 
   /// Quita un visto por su identificador único ('fuente-tipo-id').
   Future<void> quitarVisto(String idUnico) =>
       _cambiarLista(true, (l) => l.where((v) => v.idUnico != idUnico).toList());
+
+  // ===== Estado (de la base de datos) y nota personal =====
+
+  /// La entrada guardada de esta obra (en Favoritos o, si no, en Vistos),
+  /// con su estado y nota; null si no está guardada.
+  FavoritoModel? guardado(String fuente, String tipo, int id, String titulo) {
+    final item = FavoritoModel(
+      tipo: tipo,
+      fuente: fuente,
+      id: id,
+      titulo: titulo,
+    );
+    return _encontrar(favoritos, item) ?? _encontrar(vistos, item);
+  }
+
+  /// Cambia la nota personal de [item] (null = sin puntuar) en las dos
+  /// listas donde esté guardado, para que Favoritos y Vistos coincidan.
+  Future<void> cambiarNota(FavoritoModel item, int? nota) => _cambiarGuardados(
+    (f) => _encontrar([f], item) == null
+        ? f
+        : f.conValoracion(estado: f.estado, puntuacion: nota),
+  );
+
+  /// Apunta el estado que da la base de datos para [item] (al abrir su
+  /// ficha). No guarda nada si no ha cambiado.
+  Future<void> actualizarEstado(FavoritoModel item, String estado) =>
+      _cambiarGuardados(
+        (f) => _encontrar([f], item) == null
+            ? f
+            : f.conValoracion(estado: estado, puntuacion: f.puntuacion),
+      );
+
+  // Obras cuyo estado ya se consultó en esta sesión (no se repite)
+  final Set<String> _estadosConsultados = {};
+
+  /// Completa en segundo plano el estado de lo guardado sin estado (lo
+  /// añadido desde los resultados de búsqueda, que no lo traen). Se
+  /// guarda una sola vez al final.
+  // shortcut: un estado ya apuntado solo se refresca al abrir la ficha;
+  // si hiciera falta al día sin abrirla, consultar también los conocidos.
+  Future<void> completarEstados() async {
+    final pendientes = [
+      ...favoritos,
+      ...vistos,
+    ].where((f) => f.estado == null && f.tipo != 'persona');
+    final porConsultar = [
+      for (final f in pendientes)
+        if (_estadosConsultados.add(f.idUnico)) f,
+    ];
+    if (porConsultar.isEmpty) return;
+    final estados = await Future.wait(porConsultar.map(_consultarEstado));
+    final nuevos = {
+      for (var i = 0; i < porConsultar.length; i++)
+        if (estados[i] != null) porConsultar[i].idUnico: estados[i]!,
+    };
+    await _cambiarGuardados(
+      (f) => nuevos[f.idUnico] == null
+          ? f
+          : f.conValoracion(
+              estado: nuevos[f.idUnico],
+              puntuacion: f.puntuacion,
+            ),
+    );
+  }
+
+  /// Estado de una obra guardada según su base de datos; null si no se
+  /// sabe o no hay conexión.
+  static Future<String?> _consultarEstado(FavoritoModel f) async {
+    try {
+      final estadoApi = switch ((f.tipo, f.fuente)) {
+        ('pelicula', _) => (await TmdbService.obtenerPelicula(
+          f.id,
+          'es-ES',
+          conCreditos: false,
+        )).estado,
+        ('serie', 'tmdb') => (await TmdbService.obtenerSerie(
+          f.id,
+          'es-ES',
+          conReparto: false,
+        )).estado,
+        ('serie', _) => (await TvmazeService.obtenerSerie(f.id))?.estado,
+        _ => (await AnilistService.cargarManga(f.id)).estado,
+      };
+      return estadoApi == null ? null : FavoritoModel.estadoDeApi(estadoApi);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Aplica [cambio] a cada entrada de Favoritos y Vistos y guarda, solo
+  /// si alguna cambió de verdad.
+  Future<void> _cambiarGuardados(
+    FavoritoModel Function(FavoritoModel) cambio,
+  ) async {
+    final usuario = _usuarioActual;
+    if (usuario == null) return;
+    var cambiado = false;
+    List<FavoritoModel> aplicar(List<FavoritoModel> lista) => lista.map((f) {
+      final nuevo = cambio(f);
+      cambiado |= nuevo.estado != f.estado || nuevo.puntuacion != f.puntuacion;
+      return nuevo;
+    }).toList();
+    final favoritos = aplicar(usuario.favoritos);
+    final vistos = aplicar(usuario.vistos);
+    if (!cambiado) return;
+    _usuarioActual = usuario.copyWith(favoritos: favoritos, vistos: vistos);
+    await _persistir();
+  }
+
+  /// [item] con el estado y la puntuación que ya tenga en [otraLista]
+  /// (p. ej. al marcar como visto algo de Favoritos ya valorado).
+  static FavoritoModel _conValoracionDe(
+    List<FavoritoModel> otraLista,
+    FavoritoModel item,
+  ) {
+    final previo = _encontrar(otraLista, item);
+    return previo == null
+        ? item
+        : item.conValoracion(
+            estado: previo.estado,
+            puntuacion: previo.puntuacion,
+          );
+  }
 
   // ===== Importar copia de seguridad =====
 

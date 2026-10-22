@@ -81,9 +81,38 @@ const Map<String, Map<String, String>> cadenas = {
     'errorCargarManga': 'No se ha podido cargar la ficha del manga',
     'inicioVacio': 'Busca series, películas o personas para empezar',
     'proximosEstrenos': 'Próximamente (7 días)',
-    'avisoHoy': 'Hoy se estrena',
     'dondeVer': 'Dónde verlo',
     'datosJustWatch': 'Datos de plataformas: JustWatch',
+    // Estado (de la base de datos) y nota personal
+    'planeado': 'Planeado',
+    'enEmisionEstado': 'En emisión',
+    'enEspera': 'En espera',
+    'abandonado': 'Abandonado',
+    'finalizadoEstado': 'Finalizado',
+    'sinEstado': 'Sin estado',
+    'tuNota': 'Tu nota',
+    'sinPuntuar': 'Sin puntuar',
+    'todosEstados': 'Todos los estados',
+    'ordenAnadido': 'Orden en que se añadió',
+    'ordenPuntuacion': 'Por tu nota',
+    'ordenAZ': 'Alfabético (A-Z)',
+    'ordenZA': 'Alfabético (Z-A)',
+    // Favoritos de personas
+    'sinPersonasFavoritas': 'No tienes personas en favoritos',
+    // Cuenta atrás de estrenos
+    'estrenaEnDias': 'Estrena en {n} días',
+    'estrenaManana': 'Estrena mañana',
+    'hoyEstrena': '¡Hoy estrena!',
+    'enDias': 'en {n} días',
+    'manana': 'mañana',
+    'hoyMinuscula': 'hoy',
+    // Recomendaciones
+    'recomendaciones': '¿Te gustó esto? También te puede gustar',
+    // Avisos de estreno
+    'avisosEstreno': 'Notificaciones de estreno',
+    'avisosEstrenoAyuda': 'Avisa de los estrenos de hoy de tus favoritos',
+    'avisoHoyPelicula': 'Hoy estrena: {titulo}',
+    'avisoHoyEpisodio': 'Hoy sale el episodio {n} de {titulo}',
     'anadirFavoritos': 'Añadir a favoritos',
     'quitarFavoritos': 'Quitar de favoritos',
     'anadirVistos': 'Añadir a vistos',
@@ -283,9 +312,38 @@ const Map<String, Map<String, String>> cadenas = {
     'errorCargarManga': 'Could not load the manga details',
     'inicioVacio': 'Search series, movies or people to get started',
     'proximosEstrenos': 'Coming up (next 7 days)',
-    'avisoHoy': 'Out today',
     'dondeVer': 'Where to watch',
     'datosJustWatch': 'Streaming data by JustWatch',
+    // Status (from the database) and personal rating
+    'planeado': 'Planned',
+    'enEmisionEstado': 'Watching',
+    'enEspera': 'On hold',
+    'abandonado': 'Dropped',
+    'finalizadoEstado': 'Finished',
+    'sinEstado': 'No status',
+    'tuNota': 'Your rating',
+    'sinPuntuar': 'Not rated',
+    'todosEstados': 'All statuses',
+    'ordenAnadido': 'Order added',
+    'ordenPuntuacion': 'By your rating',
+    'ordenAZ': 'Alphabetical (A-Z)',
+    'ordenZA': 'Alphabetical (Z-A)',
+    // Favorite people
+    'sinPersonasFavoritas': 'You have no people in favorites',
+    // Release countdown
+    'estrenaEnDias': 'Out in {n} days',
+    'estrenaManana': 'Out tomorrow',
+    'hoyEstrena': 'Out today!',
+    'enDias': 'in {n} days',
+    'manana': 'tomorrow',
+    'hoyMinuscula': 'today',
+    // Recommendations
+    'recomendaciones': 'If you liked this, you might also like',
+    // Release notifications
+    'avisosEstreno': 'Release notifications',
+    'avisosEstrenoAyuda': "Notifies you of today's releases of your favorites",
+    'avisoHoyPelicula': 'Out today: {titulo}',
+    'avisoHoyEpisodio': 'Episode {n} of {titulo} is out today',
     'anadirFavoritos': 'Add to favorites',
     'quitarFavoritos': 'Remove from favorites',
     'anadirVistos': 'Mark as watched',
@@ -415,6 +473,16 @@ String idiomaApi(String idioma) => idioma == 'es' ? 'es-ES' : 'en-US';
 /// Si falta, usa el español; y si tampoco está, devuelve la propia clave.
 String t(String clave, String idioma) {
   return cadenas[idioma]?[clave] ?? cadenas['es']?[clave] ?? clave;
+}
+
+/// Como [t], sustituyendo los huecos {nombre} por [valores]
+/// (p. ej. tv('estrenaEnDias', 'es', {'n': 3}) → "Estrena en 3 días").
+String tv(String clave, String idioma, Map<String, Object> valores) {
+  var texto = t(clave, idioma);
+  valores.forEach((nombre, valor) {
+    texto = texto.replaceAll('{$nombre}', '$valor');
+  });
+  return texto;
 }
 
 /// Géneros en inglés (TVMaze siempre, TMDB en inglés) traducidos al español.

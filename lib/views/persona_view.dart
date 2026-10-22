@@ -1,6 +1,7 @@
 // VISTA de la ficha de una persona (se abre con Navigator.push). Muestra
 // foto, nombre, cumpleaños, lugar y su filmografía en tarjetas (al tocar
-// una se abre la ficha de esa serie o película). Crea su
+// una se abre la ficha de esa serie o película), con un botón para
+// guardarla en Favoritos. Crea su
 // PersonaController, que carga y fusiona los datos de TMDB y TVMaze y se
 // destruye al volver atrás. Solo dibuja; la lógica está en el controlador.
 import 'package:flutter/material.dart';
@@ -136,6 +137,31 @@ class _CuerpoPersona extends StatelessWidget {
     );
   }
 
+  /// Botón ❤️ para guardar la persona en Favoritos (igual que las series).
+  /// Se guarda con el id con que se abrió la ficha y el nombre y la foto
+  /// ya cargados, para pintar la lista sin llamar a la API.
+  Widget _botonFavorito(
+      BuildContext context, PersonaModel? cargada, String idioma) {
+    final app = context.watch<AppController>();
+    final inicial = context.read<PersonaController>().personaInicial;
+    final persona = PersonaModel(
+      id: inicial.id,
+      fuente: inicial.fuente,
+      nombre: cargada?.nombre ?? inicial.nombre,
+      fotoUrl: cargada?.fotoUrl ?? inicial.fotoUrl,
+    );
+    final esFav = app.esFavorito(persona.fuente, 'persona', persona.id,
+        titulo: persona.nombre);
+    return FilledButton.tonalIcon(
+      onPressed: () => app.alternarFavoritoDePersona(persona),
+      icon: Icon(
+        esFav ? Icons.favorite : Icons.favorite_border,
+        color: esFav ? Colors.red : null,
+      ),
+      label: Text(t(esFav ? 'quitarFavoritos' : 'anadirFavoritos', idioma)),
+    );
+  }
+
   /// Cabecera con la foto, el nombre y el departamento (conocido por).
   Widget _cabecera(BuildContext context, PersonaModel? persona, String nombre,
       String dept, String idioma) {
@@ -167,6 +193,8 @@ class _CuerpoPersona extends StatelessWidget {
         if (lugar != null && lugar.isNotEmpty)
           Text('${t('lugarNacimiento', idioma)}: $lugar',
               style: tema.textTheme.bodyMedium),
+        const SizedBox(height: 12),
+        _botonFavorito(context, persona, idioma),
       ],
     );
 

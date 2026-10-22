@@ -2,7 +2,8 @@
 // Navigator.push desde los resultados o desde Favoritos/Vistos).
 // Carga el título desde su fuente original (TMDB o TVMaze), permite
 // cambiar de fuente enlazando por el id de IMDb y carga los episodios de
-// cada temporada. Se crea en detalle_view.dart y se DESTRUYE al volver
+// cada temporada y las recomendaciones de TMDB. Se crea en
+// detalle_view.dart y se DESTRUYE al volver
 // atrás: por eso sus métodos async comprueban `if (_destruido) return;`
 // antes de notificar (si no, avisarían a un controlador ya liberado).
 import 'package:flutter/foundation.dart';
@@ -47,8 +48,8 @@ class DetalleController extends ChangeNotifier {
     required this.fuenteInicial,
     this.imdbIdInicial,
     required this.language,
-  })  : _fuente = fuenteInicial,
-        _imdbId = imdbIdInicial;
+  }) : _fuente = fuenteInicial,
+       _imdbId = imdbIdInicial;
 
   SerieModel? get serie => _serie;
   PeliculaModel? get pelicula => _pelicula;
@@ -60,6 +61,12 @@ class DetalleController extends ChangeNotifier {
   bool get tvmazeOk => _tvmazeOk;
   bool get cargandoEpisodios => _cargandoEpisodios;
   bool get esSerie => tipo == 'serie';
+
+  // Recomendaciones de TMDB (solo se usa la lista del tipo de la ficha)
+  List<SerieModel> _recomendacionesSeries = const [];
+  List<PeliculaModel> _recomendacionesPeliculas = const [];
+  List<SerieModel> get recomendacionesSeries => _recomendacionesSeries;
+  List<PeliculaModel> get recomendacionesPeliculas => _recomendacionesPeliculas;
 
   @override
   void dispose() {
@@ -106,6 +113,36 @@ class DetalleController extends ChangeNotifier {
     if (_destruido) return; // la vista se cerró: nadie escucha ya
     _cargando = false;
     notifyListeners();
+    _cargarRecomendaciones(); // después: la ficha se ve sin esperarlas
+  }
+
+  /// Recomendaciones de TMDB ("si te gustó esto..."). Necesitan el id de
+  /// TMDB: si la serie se abrió desde TVMaze se enlaza por título. Si no
+  /// hay id o TMDB no devuelve nada, la lista queda vacía (no se pinta).
+  Future<void> _cargarRecomendaciones() async {
+    try {
+      if (esSerie) {
+        final serie = _serie;
+        final id =
+            _idTmdb ??
+            (serie == null
+                ? null
+                : (await BusquedaService.enlazarEnTmdb(serie, language))?.id);
+        if (id == null) return;
+        _recomendacionesSeries = await TmdbService.recomendacionesSerie(
+          id,
+          language,
+        );
+      } else {
+        _recomendacionesPeliculas = await TmdbService.recomendacionesPelicula(
+          idInicial,
+          language,
+        );
+      }
+    } catch (_) {
+      return; // sin conexión o sin clave: sin recomendaciones
+    }
+    if (!_destruido) notifyListeners();
   }
 
   Future<void> _cargarPelicula() async {
@@ -253,7 +290,10 @@ class DetalleController extends ChangeNotifier {
     notifyListeners();
     try {
       final episodios = await TmdbService.obtenerEpisodiosTemporada(
-          idTmdb, numero, language);
+        idTmdb,
+        numero,
+        language,
+      );
       if (_destruido) return; // la vista se cerró: nadie escucha ya
       _episodios[numero] = episodios;
     } catch (_) {

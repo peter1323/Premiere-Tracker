@@ -12,10 +12,11 @@ import '../controllers/app_controller.dart';
 import '../controllers/manga_detalle_controller.dart';
 import '../l10n/app_strings.dart';
 import '../models/manga_model.dart';
-import '../services/enlace_service.dart';
 import '../services/anilist_service.dart';
+import '../services/enlace_service.dart';
 import '../services/mangadex_service.dart';
 import 'widgets/tarjeta_manga.dart';
+import 'widgets/nota_personal.dart';
 
 /// Ficha de un manga: portada, estado (AniList), datos generales, sinopsis,
 /// el último capítulo publicado (MangaDex) y botones para añadirlo a
@@ -249,6 +250,14 @@ class _MangaDetalleViewState extends State<MangaDetalleView> {
             ),
           ],
         ),
+        // Nota personal (solo si está en Favoritos o Leídos)
+        NotaPersonal(
+          fuente: 'anilist',
+          tipo: tipoManga,
+          id: m.id,
+          titulo: m.titulo,
+          estadoApi: m.estado,
+        ),
         if (m.formato.isNotEmpty || m.pais.isNotEmpty) ...[
           const SizedBox(height: 8),
           Wrap(
@@ -359,7 +368,6 @@ class _MangaDetalleViewState extends State<MangaDetalleView> {
       ),
     );
   }
-
 }
 
 /// Bloque del último capítulo en cada idioma: cargando, el capítulo de ese

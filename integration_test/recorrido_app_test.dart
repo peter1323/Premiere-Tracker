@@ -23,6 +23,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:premiere_tracker/main.dart';
 import 'package:premiere_tracker/services/avisos_service.dart';
 import 'package:premiere_tracker/services/clave_service.dart';
+import 'package:premiere_tracker/views/widgets/fila_horizontal.dart';
 import 'package:premiere_tracker/views/widgets/tarjeta_resultado.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -201,7 +202,39 @@ void main() {
     await esperar(find.byType(BackButton));
     // Con clave de TMDB la ficha dice en qué plataformas verla en España
     if (_claveTmdb.isNotEmpty) await esperar(find.text('Dónde verlo'));
-    await pulsar(find.byType(BackButton));
+    // Con clave, al final de la ficha: recomendaciones de TMDB
+    if (_claveTmdb.isNotEmpty) {
+      await esperar(find.text('¿Te gustó esto? También te puede gustar'));
+    }
+    // Está en Favoritos: tu nota personal
+    await pulsar(find.byType(DropdownButton<int?>));
+    await pulsar(find.text('8/10').last);
+    // Una persona del reparto a Favoritos desde su ficha
+    await pulsar(
+      find.descendant(
+        of: find.byType(FilaHorizontal).first,
+        matching: find.byType(InkWell),
+      ),
+    );
+    await esperar(find.text('Añadir a favoritos'));
+    await pulsar(find.text('Añadir a favoritos'));
+    expect(find.text('Quitar de favoritos'), findsOneWidget);
+    await pulsar(find.byType(BackButton)); // persona → ficha
+    await pulsar(find.byType(BackButton)); // ficha → Favoritos
+
+    // La tarjeta muestra el estado de la base de datos (Breaking Bad ya
+    // terminó) y la nota elegida
+    expect(find.text('Finalizado'), findsOneWidget);
+    expect(find.text('8/10'), findsOneWidget);
+    // Cada filtro dice cuántos hay; sin número si no hay ninguno
+    expect(find.text('Todo (2)'), findsOneWidget);
+    expect(find.text('Series (1)'), findsOneWidget);
+    expect(find.text('Novelas'), findsOneWidget);
+    // Filtro Personas: está la persona; al quitarla sale su aviso vacío
+    await pulsar(find.text('Personas (1)'));
+    await pulsar(enTarjeta(find.byType(TarjetaResultado), Icons.favorite));
+    expect(find.text('No tienes personas en favoritos'), findsOneWidget);
+    await pulsar(find.text('Todo (1)'));
 
     // Quitar de favoritos desde su propia pantalla
     await pulsar(enTarjeta(find.byType(TarjetaResultado), Icons.favorite));
@@ -269,6 +302,14 @@ void main() {
 
     await pulsar(find.byTooltip('Cambiar entre modo claro y oscuro'));
     await pulsar(find.byTooltip('Cambiar entre modo claro y oscuro'));
+    // Notificaciones de estreno: activadas por defecto; se apagan y encienden
+    bool avisos() =>
+        tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value;
+    expect(avisos(), isTrue);
+    await pulsar(find.text('Notificaciones de estreno'));
+    expect(avisos(), isFalse);
+    await pulsar(find.text('Notificaciones de estreno'));
+    expect(avisos(), isTrue);
 
     // --- 7. Cambiar de usuario: vuelve a la pantalla de usuarios ---
     await pulsar(find.byTooltip('Prueba'));

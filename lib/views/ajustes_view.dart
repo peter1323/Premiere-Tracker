@@ -1,6 +1,7 @@
 // VISTA de la pantalla Ajustes (sección 6 del menú).
-// Permite cambiar idioma y tema, hacer copia de seguridad (exportar/
-// importar JSON) y gestionar usuarios (cambiar nombre o PIN). Solo dibuja
+// Permite cambiar idioma, tema y notificaciones de estreno, hacer copia
+// de seguridad (exportar/importar JSON) y gestionar usuarios (cambiar
+// nombre o PIN). Solo dibuja
 // y llama a AjustesController. Los diálogos (nombre, PIN) son
 // StatefulWidget que liberan sus TextEditingController en dispose() para
 // no dejarlos huérfanos tras cerrar. Vive en el IndexedStack.
@@ -93,6 +94,16 @@ class _CuerpoAjustes extends StatelessWidget {
                 onSelectionChanged: (nuevo) {
                   if (nuevo.isNotEmpty) app.cambiarTemaA(nuevo.first);
                 },
+              ),
+              const SizedBox(height: 24),
+
+              // ===== Notificaciones de estreno (activadas por defecto) =====
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(t('avisosEstreno', idioma)),
+                subtitle: Text(t('avisosEstrenoAyuda', idioma)),
+                value: app.avisosActivados,
+                onChanged: app.cambiarAvisos,
               ),
               const SizedBox(height: 24),
 

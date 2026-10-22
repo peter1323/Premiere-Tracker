@@ -13,6 +13,7 @@ class UsuarioModel {
   final String pinHash; // SHA-256 en hexadecimal, nunca el PIN en texto plano
   final String tema; // 'claro' u 'oscuro'
   final String idioma; // 'es' o 'en'
+  final bool avisos; // notificaciones de estreno (activadas por defecto)
   final List<FavoritoModel> favoritos;
   final List<FavoritoModel> vistos; // marcados como vistos (mismo modelo)
   final List<NotaModel> notas; // notas personales del usuario
@@ -23,6 +24,7 @@ class UsuarioModel {
     required this.pinHash,
     this.tema = 'oscuro', // usuarios nuevos: oscuro por defecto
     this.idioma = 'es',
+    this.avisos = true,
     this.favoritos = const [],
     this.vistos = const [],
     this.notas = const [],
@@ -35,6 +37,7 @@ class UsuarioModel {
       pinHash: json['pinHash'] as String,
       tema: json['tema'] as String? ?? 'claro',
       idioma: json['idioma'] as String? ?? 'es',
+      avisos: json['avisos'] as bool? ?? true, // datos antiguos: activadas
       favoritos: (json['favoritos'] as List<dynamic>? ?? [])
           .map((f) => FavoritoModel.fromJson(f as Map<String, dynamic>))
           .toList(),
@@ -53,6 +56,7 @@ class UsuarioModel {
         'pinHash': pinHash,
         'tema': tema,
         'idioma': idioma,
+        'avisos': avisos,
         'favoritos': favoritos.map((f) => f.toJson()).toList(),
         'vistos': vistos.map((f) => f.toJson()).toList(),
         'notas': notas.map((n) => n.toJson()).toList(),
@@ -63,6 +67,7 @@ class UsuarioModel {
     String? pinHash,
     String? tema,
     String? idioma,
+    bool? avisos,
     List<FavoritoModel>? favoritos,
     List<FavoritoModel>? vistos,
     List<NotaModel>? notas,
@@ -73,6 +78,7 @@ class UsuarioModel {
       pinHash: pinHash ?? this.pinHash,
       tema: tema ?? this.tema,
       idioma: idioma ?? this.idioma,
+      avisos: avisos ?? this.avisos,
       favoritos: favoritos ?? this.favoritos,
       vistos: vistos ?? this.vistos,
       notas: notas ?? this.notas,

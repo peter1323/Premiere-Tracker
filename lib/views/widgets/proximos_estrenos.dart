@@ -32,7 +32,11 @@ class ProximosEstrenos extends StatelessWidget {
       control.syncFavoritos(app.favoritos, idiomaApi(idioma));
       // Sin red no se tocan los avisos ya programados
       if (!control.calendarioCargando && control.avisoCalendario == null) {
-        AvisosService.programar(proximas, idioma);
+        // Con los avisos desactivados se programa una lista vacía
+        AvisosService.programar(
+          app.avisosActivados ? proximas : const [],
+          idioma,
+        );
       }
     });
 

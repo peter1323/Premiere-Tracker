@@ -1,9 +1,11 @@
 // VISTA de las pantallas Favoritos (sección 3) y Vistos (sección 4): son
 // la misma pantalla con distinta lista. Muestra la lista del usuario con
-// un buscador por nombre y un filtro de 5 pestañas (Todo / Series /
-// Películas / Manga-Manhwa-Manhua / Novelas). Al tocar una tarjeta abre
-// su ficha. Solo dibuja y llama a ListaGuardadaController; la lista le
-// llega de AppController. Vive en el IndexedStack.
+// un buscador por nombre, un filtro por tipo (Todo / Series / Películas /
+// Manga / Novelas y, en Favoritos, Personas), un filtro por estado y el
+// orden (añadido o por tu nota). Cada tarjeta lleva sus insignias. Al
+// tocar una tarjeta abre su ficha. Solo dibuja y llama a
+// ListaGuardadaController; la lista le llega de AppController. Vive en el
+// IndexedStack.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -13,6 +15,7 @@ import '../l10n/app_strings.dart';
 import '../models/favorito_model.dart';
 import 'detalle_view.dart';
 import 'widgets/estado_vacio.dart';
+import 'widgets/insignias.dart';
 import 'widgets/tarjeta_resultado.dart';
 
 /// Pantalla de Favoritos.
@@ -60,6 +63,24 @@ class _ListaGuardadaViewState extends State<ListaGuardadaView> {
   }
 }
 
+/// Filtros por tipo: valor del filtro y clave de su texto.
+const _tipos = [
+  ('todo', 'todo'),
+  ('serie', 'series'),
+  ('pelicula', 'peliculas'),
+  ('manga', 'pestanaManga'),
+  ('novela', 'pestanaNovelas'),
+  ('persona', 'personas'),
+];
+
+/// Clave del texto de cada orden de la lista.
+const _textosOrden = {
+  'anadido': 'ordenAnadido',
+  'nota': 'ordenPuntuacion',
+  'az': 'ordenAZ',
+  'za': 'ordenZA',
+};
+
 class _Cuerpo extends StatelessWidget {
   final TextEditingController buscador;
   final bool esVistos;
@@ -71,13 +92,16 @@ class _Cuerpo extends StatelessWidget {
     final control = context.watch<ListaGuardadaController>();
     final idioma = app.idioma;
 
-    // Mantiene la lista al día con la del usuario actual.
+    // Mantiene la lista al día con la del usuario actual y completa los
+    // estados que falten.
     // Se hace tras el build para no notificar durante el mismo.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (context.mounted) {
-        context
-            .read<ListaGuardadaController>()
-            .sincronizar(esVistos ? app.vistos : app.favoritos);
+        context.read<ListaGuardadaController>().sincronizar(
+          esVistos ? app.vistos : app.favoritos,
+        );
+        // Lo guardado sin estado lo completa desde la base de datos
+        app.completarEstados();
       }
     });
 
@@ -120,24 +144,20 @@ class _Cuerpo extends StatelessWidget {
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: SegmentedButton<String>(
+                // Cada tipo con cuántos hay entre paréntesis: "Series (10)";
+                // sin número si no hay ninguno. Personas solo en Favoritos
+                // (no se marcan como vistas).
                 segments: [
-                  ButtonSegment(value: 'todo', label: Text(t('todo', idioma))),
-                  ButtonSegment(
-                    value: 'serie',
-                    label: Text(t('series', idioma)),
-                  ),
-                  ButtonSegment(
-                    value: 'pelicula',
-                    label: Text(t('peliculas', idioma)),
-                  ),
-                  ButtonSegment(
-                    value: 'manga',
-                    label: Text(t('pestanaManga', idioma)),
-                  ),
-                  ButtonSegment(
-                    value: 'novela',
-                    label: Text(t('pestanaNovelas', idioma)),
-                  ),
+                  for (final (valor, clave) in _tipos)
+                    if (valor != 'persona' || !esVistos)
+                      ButtonSegment(
+                        value: valor,
+                        label: Text(
+                          control.cuantos(valor) > 0
+                              ? '${t(clave, idioma)} (${control.cuantos(valor)})'
+                              : t(clave, idioma),
+                        ),
+                      ),
                 ],
                 selected: {control.filtro},
                 onSelectionChanged: (nuevo) {
@@ -145,7 +165,51 @@ class _Cuerpo extends StatelessWidget {
                 },
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
+            // Filtro de estado (no en Personas) y orden
+            Wrap(
+              spacing: 16,
+              runSpacing: 4,
+              children: [
+                if (!control.esPersonas)
+                  DropdownButton<String>(
+                    value: control.filtroEstado,
+                    items: [
+                      for (final e in [
+                        'todos',
+                        ...FavoritoModel.estados,
+                        'sin',
+                      ])
+                        DropdownMenuItem(
+                          value: e,
+                          child: Text(
+                            e == 'todos'
+                                ? t('todosEstados', idioma)
+                                : e == 'sin'
+                                ? t('sinEstado', idioma)
+                                : textoEstado(e, idioma),
+                          ),
+                        ),
+                    ],
+                    onChanged: (e) {
+                      if (e != null) control.cambiarFiltroEstado(e);
+                    },
+                  ),
+                DropdownButton<String>(
+                  value: control.orden,
+                  items: [
+                    for (final o in control.ordenes)
+                      DropdownMenuItem(
+                        value: o,
+                        child: Text(t(_textosOrden[o]!, idioma)),
+                      ),
+                  ],
+                  onChanged: (o) {
+                    if (o != null) control.cambiarOrden(o);
+                  },
+                ),
+              ],
+            ),
           ];
 
           // Lista o estado vacío
@@ -157,10 +221,16 @@ class _Cuerpo extends StatelessWidget {
                   texto: t(esVistos ? 'sinVistos' : 'sinFavoritos', idioma),
                 )
               : elementos.isEmpty
-              ? EstadoVacio(
-                  icono: Icons.search_off,
-                  texto: t('sinCoincidencias', idioma),
-                )
+              // Sin personas guardadas: aviso propio; si no, sin coincidencias
+              ? control.filtro == 'persona'
+                    ? EstadoVacio(
+                        icono: Icons.person_outline,
+                        texto: t('sinPersonasFavoritas', idioma),
+                      )
+                    : EstadoVacio(
+                        icono: Icons.search_off,
+                        texto: t('sinCoincidencias', idioma),
+                      )
               : SingleChildScrollView(
                   child: Wrap(
                     spacing: 12,
@@ -196,25 +266,43 @@ class _Cuerpo extends StatelessWidget {
 
   /// Tarjeta: al pulsar abre el detalle. En Favoritos el corazón lo quita
   /// y el ojo alterna visto; en Vistos el ojo lo quita y el corazón
-  /// alterna favorito.
-  Widget _tarjeta(BuildContext context, FavoritoModel item, AppController app,
-      String idioma) {
-    final language = idiomaApi(idioma);
+  /// alterna favorito. Las personas no tienen ojo ni insignias.
+  Widget _tarjeta(
+    BuildContext context,
+    FavoritoModel item,
+    AppController app,
+    String idioma,
+  ) {
+    final esPersona = item.tipo == 'persona';
     return TarjetaResultado(
       titulo: item.titulo,
       anio: item.anio,
       posterUrl: item.posterUrl,
-      esFavorito: !esVistos ||
+      iconoMarcador: esPersona ? Icons.person_outline : Icons.movie_outlined,
+      insignias: esPersona
+          ? const []
+          : insigniasDe(
+              estado: item.estado,
+              puntuacion: item.puntuacion,
+              fechaEstreno: item.fechaEstreno,
+              idioma: idioma,
+            ),
+      esFavorito:
+          !esVistos ||
           app.esFavorito(item.fuente, item.tipo, item.id, titulo: item.titulo),
       onFavorito: esVistos
           ? () => app.alternarFavorito(item)
           : () => app.quitarFavorito(item.idUnico),
-      esVisto: esVistos ||
+      esVisto:
+          esVistos ||
           app.esVisto(item.fuente, item.tipo, item.id, titulo: item.titulo),
-      onVisto: esVistos
+      onVisto: esPersona
+          ? null
+          : esVistos
           ? () => app.quitarVisto(item.idUnico)
           : () => app.alternarVisto(item),
-      onAbrir: () => DetalleView.abrirFavorito(context, item, language),
+      onAbrir: () =>
+          DetalleView.abrirFavorito(context, item, idiomaApi(idioma)),
     );
   }
 }
