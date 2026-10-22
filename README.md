@@ -6,6 +6,15 @@
 
 Aplicación multiplataforma para Windows y Android desarrollada con Flutter y Dart en Android Studio. Sirve para buscar películas, series y personas, ver cuándo se estrenan las películas y cuándo salen las temporadas y los episodios de las series (incluidas las que emiten semana a semana), buscar mangas, manhwas, manhuas y novelas con su ficha y sus últimos capítulos, y llevar un seguimiento personal: favoritos, vistos/leídos y notas de dónde se dejó cada cosa.
 
+## Antes de instalar
+
+> [!IMPORTANT]
+> **Windows (unos 30 MB):** copia la **carpeta `Release` completa** (el `.exe`, los `.dll` y la carpeta `data`), no solo el `.exe`. Si al abrirla no arranca o dice que falta `MSVCP140.dll` / `VCRUNTIME140.dll`, instala el **Microsoft Visual C++ Redistributable (x64)**, gratuito y oficial de Microsoft: [descargar vc_redist.x64.exe](https://aka.ms/vs/17/release/vc_redist.x64.exe). La mayoría de PCs ya lo tienen.
+>
+> **Android (APK de unos 54 MB):** el APK normal es **universal**, vale para cualquier móvil porque lleva la app para los tres tipos de procesador (64 bits, 32 bits y x86_64). Para un APK más ligero (unos 19 MB) compila uno por procesador con `flutter build apk --release --split-per-abi`: para los móviles de los últimos años el que vale es el **`arm64-v8a`**.
+>
+> En los dos casos la primera vez hay que poner **tu propia clave de TMDB** en la pantalla de usuarios (la app no lleva ninguna).
+
 ## Funcionalidades
 
 - **Usuarios locales con PIN**: cada usuario tiene su propio perfil con un PIN de 4 dígitos cifrado con SHA-256 (nunca en texto plano) y sus propios favoritos, vistos, notas, tema e idioma. Se entra automáticamente al escribir los 4 dígitos; si el PIN está mal se avisa y se limpia el campo, y **tras dos fallos aparece una pista con los dos primeros dígitos**. Desde el propio diálogo de acceso también se puede **cambiar el PIN** (validando antes el actual). El tema elegido se recuerda también en la pantalla de usuarios.
@@ -105,7 +114,7 @@ build\windows\x64\runner\Release\premiere_tracker.exe
 
 (El nombre visible de la ventana, «Premiere Tracker», se cambia en `windows/runner/main.cpp`; no se debe renombrar el `.exe` con `OUTPUT_NAME` en CMake, porque `flutter run` y el botón ▶ de Android Studio buscan `premiere_tracker.exe`.)
 
-Para usar la app en otro ordenador hay que copiar la **carpeta completa `Release`** (el `.exe`, los archivos `.dll` y la carpeta `data`), no solo el `.exe`.
+Para usar la app en otro ordenador hay que copiar la **carpeta completa `Release`** (el `.exe`, los archivos `.dll` y la carpeta `data`), no solo el `.exe`. Si en ese PC no arranca, falta el Visual C++ Redistributable (ver [Antes de instalar](#antes-de-instalar)).
 
 ## Cómo compilar el APK (Android)
 
@@ -121,7 +130,17 @@ El APK se genera en:
 build\app\outputs\apk\release\Premiere-Tracker.apk
 ```
 
-Se instala en el móvil copiando el archivo o con `flutter install`. **El APK no lleva ninguna clave TMDB embebida**: cada persona que lo instale debe introducir su propia clave en la app (pantalla de usuarios → «Clave TMDB»).
+Se instala en el móvil copiando el archivo o con `flutter install`.
+
+Para un APK más ligero, uno por tipo de procesador (ver [Antes de instalar](#antes-de-instalar)):
+
+```bash
+flutter build apk --release --split-per-abi
+```
+
+Para los móviles actuales se usa el que lleva `arm64-v8a` en el nombre.
+
+**El APK no lleva ninguna clave TMDB embebida**: cada persona que lo instale debe introducir su propia clave en la app (pantalla de usuarios → «Clave TMDB»).
 
 ## Pruebas
 

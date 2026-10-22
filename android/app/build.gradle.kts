@@ -45,10 +45,15 @@ android {
 
     // Nombre del APK generado: Premiere-Tracker.apk (en vez de app-release.apk),
     // para que al compartirlo por Telegram o USB lleve un nombre reconocible.
+    // Con --split-per-abi hay un APK por procesador y se añade al nombre
+    // (Premiere-Tracker-arm64-v8a.apk...): si se llamaran igual, se pisarían
+    // y los tres acabarían siendo el mismo.
     applicationVariants.all {
         outputs.all {
-            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl)
-                .outputFileName = "Premiere-Tracker.apk"
+            val salida = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            val abi = salida.getFilter("ABI")
+            salida.outputFileName =
+                if (abi == null) "Premiere-Tracker.apk" else "Premiere-Tracker-$abi.apk"
         }
     }
 }
