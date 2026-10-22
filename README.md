@@ -168,7 +168,7 @@ Ideas pensadas pero aún no hechas. Si alguien las pide, se pueden añadir.
 
 ### Avisos de capítulo nuevo de manga
 
-Hoy la ficha de cada manga ya muestra el último capítulo publicado en tres idiomas (español de España, latino e inglés), así que para saber si hay uno nuevo basta con abrirla. La idea sería que la app lo avisara sola:
+La ficha de cada manga ya muestra el último capítulo publicado en tres idiomas (español de España, latino e inglés), así que para saber si hay uno nuevo basta con abrirla. La idea sería que la app lo avisara sola:
 
 ![Idea: avisos de capítulo nuevo de manga](docs/img/idea-avisos-manga.svg)
 
