@@ -20,6 +20,7 @@ import 'widgets/estado_vacio.dart';
 import 'widgets/proximos_estrenos.dart';
 import 'widgets/selector_fuente.dart';
 import 'widgets/tarjeta_persona.dart';
+import 'widgets/rejilla_tarjetas.dart';
 import 'widgets/tarjeta_resultado.dart';
 
 /// Pantalla de Inicio: buscador (TMDB y TVMaze en paralelo) con
@@ -132,7 +133,12 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ...fijo,
-                  SizedBox(height: 360, child: _contenido(control, idioma)),
+                  // Próximamente va a su altura natural (se desliza con la
+                  // página); los resultados, en una caja de 360 px
+                  if (control.hayConsulta)
+                    SizedBox(height: 360, child: _contenido(control, idioma))
+                  else
+                    _contenido(control, idioma),
                 ],
               ),
             );
@@ -164,7 +170,10 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
       // Sin búsqueda: los próximos estrenos de los favoritos; si no hay,
       // se invita a usar el buscador
       return ProximosEstrenos(
-        vacio: EstadoVacio(icono: Icons.search, texto: t('inicioVacio', idioma)),
+        vacio: EstadoVacio(
+          icono: Icons.search,
+          texto: t('inicioVacio', idioma),
+        ),
       );
     }
     if (!control.hayResultados) {
@@ -234,14 +243,10 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
           )
         else
           Expanded(
-            child: SingleChildScrollView(
-              child: Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: series
-                    .map((s) => _tarjetaSerie(s, app, idioma))
-                    .toList(),
-              ),
+            child: RejillaTarjetas(
+              tarjetas: series
+                  .map((s) => _tarjetaSerie(s, app, idioma))
+                  .toList(),
             ),
           ),
       ],
@@ -259,14 +264,8 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
         texto: t('sinResultados', idioma),
       );
     }
-    return SingleChildScrollView(
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: peliculas
-            .map((p) => _tarjetaPelicula(p, app, idioma))
-            .toList(),
-      ),
+    return RejillaTarjetas(
+      tarjetas: peliculas.map((p) => _tarjetaPelicula(p, app, idioma)).toList(),
     );
   }
 
@@ -280,12 +279,8 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
         texto: t('sinResultados', idioma),
       );
     }
-    return SingleChildScrollView(
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: personas.map((p) => _tarjetaPersona(p, idioma)).toList(),
-      ),
+    return RejillaTarjetas(
+      tarjetas: personas.map((p) => _tarjetaPersona(p, idioma)).toList(),
     );
   }
 
@@ -388,4 +383,3 @@ class _Aviso extends StatelessWidget {
     );
   }
 }
-

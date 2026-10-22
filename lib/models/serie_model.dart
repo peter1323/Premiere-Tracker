@@ -312,13 +312,37 @@ class TmdbRefs {
     return nombres;
   }
 
-  /// Plataformas de streaming en España ("watch/providers", anexado al
+  /// País de las fechas de estreno y de "dónde verlo".
+  // shortcut: región fija España; cambiar si hay usuarios de otros países.
+  static const String region = 'ES';
+
+  /// Fecha de estreno de una película en [region] ('yyyy-MM-dd'): el
+  /// primer estreno de allí en "release_dates" (anexado al detalle), sin
+  /// contar festivales. Si no hay, la fecha principal de TMDB, que es la
+  /// del primer país del mundo y puede ser otra (p. ej. 19/10 en vez del
+  /// 23/10 de España).
+  static String fechaEstrenoEnRegion(Map<String, dynamic> json) {
+    final principal = (json['release_date'] as String?) ?? '';
+    final paises = json['release_dates']?['results'];
+    if (paises is! List) return principal;
+    final fechas = [
+      for (final p in paises)
+        if (p is Map<String, dynamic> && p['iso_3166_1'] == region)
+          for (final e in p['release_dates'] as List? ?? const [])
+            if (e is Map<String, dynamic> &&
+                e['type'] != 1 && // 1 = estreno en festival
+                (e['release_date'] as String? ?? '').length >= 10)
+              (e['release_date'] as String).substring(0, 10),
+    ]..sort();
+    return fechas.isEmpty ? principal : fechas.first;
+  }
+
+  /// Plataformas de streaming en [region] ("watch/providers", anexado al
   /// detalle): de suscripción, gratis o con anuncios, sin repetir.
   /// null si no hay ninguna (no se muestra la sección).
-  // shortcut: región fija España; cambiar 'ES' si hay usuarios de fuera.
   static DondeVer? dondeVerDe(dynamic json) {
     final resultados = json is Map<String, dynamic> ? json['results'] : null;
-    final es = resultados is Map<String, dynamic> ? resultados['ES'] : null;
+    final es = resultados is Map<String, dynamic> ? resultados[region] : null;
     if (es is! Map<String, dynamic>) return null;
     final ids = <int>{};
     final plataformas = [

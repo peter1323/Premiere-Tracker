@@ -16,6 +16,7 @@ import '../models/favorito_model.dart';
 import 'detalle_view.dart';
 import 'widgets/estado_vacio.dart';
 import 'widgets/insignias.dart';
+import 'widgets/rejilla_tarjetas.dart';
 import 'widgets/tarjeta_resultado.dart';
 
 /// Pantalla de Favoritos.
@@ -100,8 +101,8 @@ class _Cuerpo extends StatelessWidget {
         context.read<ListaGuardadaController>().sincronizar(
           esVistos ? app.vistos : app.favoritos,
         );
-        // Lo guardado sin estado lo completa desde la base de datos
-        app.completarEstados();
+        // Completa estados y fechas de estreno desde la base de datos
+        app.completarDatos();
       }
     });
 
@@ -166,49 +167,69 @@ class _Cuerpo extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            // Filtro de estado (no en Personas) y orden
-            Wrap(
-              spacing: 16,
-              runSpacing: 4,
-              children: [
-                if (!control.esPersonas)
-                  DropdownButton<String>(
-                    value: control.filtroEstado,
-                    items: [
-                      for (final e in [
-                        'todos',
-                        ...FavoritoModel.estados,
-                        'sin',
-                      ])
-                        DropdownMenuItem(
-                          value: e,
-                          child: Text(
-                            e == 'todos'
-                                ? t('todosEstados', idioma)
-                                : e == 'sin'
-                                ? t('sinEstado', idioma)
-                                : textoEstado(e, idioma),
-                          ),
-                        ),
-                    ],
-                    onChanged: (e) {
-                      if (e != null) control.cambiarFiltroEstado(e);
-                    },
-                  ),
-                DropdownButton<String>(
-                  value: control.orden,
-                  items: [
-                    for (final o in control.ordenes)
-                      DropdownMenuItem(
-                        value: o,
-                        child: Text(t(_textosOrden[o]!, idioma)),
+            // Filtro de estado (no en Personas) y orden, uno al lado del
+            // otro: en el móvil se reparten el ancho (el texto largo se
+            // corta con "…"); en escritorio no pasan de 560 px entre los dos.
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 560),
+              child: Row(
+                children: [
+                  if (!control.esPersonas) ...[
+                    // Icono delante: así basta un texto corto ("Todos")
+                    const Icon(Icons.filter_alt_outlined, size: 20),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: control.filtroEstado,
+                        items: [
+                          for (final e in [
+                            'todos',
+                            ...FavoritoModel.estados,
+                            'sin',
+                          ])
+                            DropdownMenuItem(
+                              value: e,
+                              child: Text(
+                                e == 'todos'
+                                    ? t('todosEstados', idioma)
+                                    : e == 'sin'
+                                    ? t('sinEstado', idioma)
+                                    : textoEstado(e, idioma),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                        ],
+                        onChanged: (e) {
+                          if (e != null) control.cambiarFiltroEstado(e);
+                        },
                       ),
+                    ),
+                    const SizedBox(width: 16),
                   ],
-                  onChanged: (o) {
-                    if (o != null) control.cambiarOrden(o);
-                  },
-                ),
-              ],
+                  const Icon(Icons.sort, size: 20),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      value: control.orden,
+                      items: [
+                        for (final o in control.ordenes)
+                          DropdownMenuItem(
+                            value: o,
+                            child: Text(
+                              t(_textosOrden[o]!, idioma),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                      ],
+                      onChanged: (o) {
+                        if (o != null) control.cambiarOrden(o);
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
           ];
 
@@ -231,14 +252,10 @@ class _Cuerpo extends StatelessWidget {
                         icono: Icons.search_off,
                         texto: t('sinCoincidencias', idioma),
                       )
-              : SingleChildScrollView(
-                  child: Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: elementos
-                        .map((f) => _tarjeta(context, f, app, idioma))
-                        .toList(),
-                  ),
+              : RejillaTarjetas(
+                  tarjetas: elementos
+                      .map((f) => _tarjeta(context, f, app, idioma))
+                      .toList(),
                 );
 
           if (medidas.maxHeight < 360) {

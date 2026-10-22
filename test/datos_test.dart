@@ -202,16 +202,45 @@ void main() {
       final app = await _appConUsuario();
       final dark = _fav('tmdb', 1, 'Dark');
       await app.alternarFavorito(dark);
-      await app.actualizarEstado(dark, 'enEmision');
+      await app.actualizarDesdeFicha(dark, estado: 'enEmision');
       await app.cambiarNota(dark, 7);
       await app.alternarVisto(dark); // hereda estado y nota de Favoritos
       expect(app.vistos.single.estado, 'enEmision');
       expect(app.vistos.single.puntuacion, 7);
-      await app.actualizarEstado(dark, 'finalizado');
+      await app.actualizarDesdeFicha(dark, estado: 'finalizado');
       await app.cambiarNota(dark, null);
       expect(app.favoritos.single.estado, 'finalizado');
       expect(app.vistos.single.puntuacion, isNull);
       expect(app.guardado('tmdb', 'serie', 1, 'Dark')?.estado, 'finalizado');
+    });
+
+    test('la fecha de una película es la de España (sin festivales); si no '
+        'la hay, la principal', () {
+      Map<String, dynamic> pais(String iso, List<(String, int)> fechas) => {
+        'iso_3166_1': iso,
+        'release_dates': [
+          for (final (fecha, tipo) in fechas)
+            {'release_date': '${fecha}T00:00:00.000Z', 'type': tipo},
+        ],
+      };
+      final json = {
+        'release_date': '2026-10-19',
+        'release_dates': {
+          'results': [
+            pais('US', [('2026-10-19', 3)]),
+            pais('ES', [
+              ('2026-12-01', 4),
+              ('2026-10-23', 3),
+              ('2026-09-05', 1),
+            ]),
+          ],
+        },
+      };
+      expect(TmdbRefs.fechaEstrenoEnRegion(json), '2026-10-23');
+      expect(
+        TmdbRefs.fechaEstrenoEnRegion({'release_date': '2026-10-19'}),
+        '2026-10-19',
+      );
     });
 
     test('el estado de la base de datos se traduce al de la app', () {

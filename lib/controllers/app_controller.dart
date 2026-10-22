@@ -329,67 +329,87 @@ class AppController extends ChangeNotifier {
         : f.conValoracion(estado: f.estado, puntuacion: nota),
   );
 
-  /// Apunta el estado que da la base de datos para [item] (al abrir su
-  /// ficha). No guarda nada si no ha cambiado.
-  Future<void> actualizarEstado(FavoritoModel item, String estado) =>
-      _cambiarGuardados(
-        (f) => _encontrar([f], item) == null
-            ? f
-            : f.conValoracion(estado: estado, puntuacion: f.puntuacion),
-      );
+  /// Apunta los datos que da la base de datos para [item] al abrir su
+  /// ficha: el estado y la fecha de estreno (null = no cambiar). No guarda
+  /// nada si no ha cambiado.
+  Future<void> actualizarDesdeFicha(
+    FavoritoModel item, {
+    String? estado,
+    String? fechaEstreno,
+  }) => _cambiarGuardados(
+    (f) => _encontrar([f], item) == null
+        ? f
+        : f.conValoracion(
+            estado: estado ?? f.estado,
+            puntuacion: f.puntuacion,
+            fechaEstreno: fechaEstreno,
+          ),
+  );
 
-  // Obras cuyo estado ya se consultó en esta sesión (no se repite)
-  final Set<String> _estadosConsultados = {};
+  // Obras ya consultadas en esta sesión (no se repiten)
+  final Set<String> _consultadas = {};
 
-  /// Completa en segundo plano el estado de lo guardado sin estado (lo
-  /// añadido desde los resultados de búsqueda, que no lo traen). Se
-  /// guarda una sola vez al final.
-  // shortcut: un estado ya apuntado solo se refresca al abrir la ficha;
-  // si hiciera falta al día sin abrirla, consultar también los conocidos.
-  Future<void> completarEstados() async {
-    final pendientes = [
-      ...favoritos,
-      ...vistos,
-    ].where((f) => f.estado == null && f.tipo != 'persona');
+  /// Completa en segundo plano, una vez por sesión: el estado de lo
+  /// guardado sin estado (lo añadido desde la búsqueda no lo trae) y la
+  /// fecha de estreno de las películas (antes se guardaba la del primer
+  /// país del mundo, no la de España). Se guarda una sola vez al final.
+  // shortcut: el estado de series y mangas ya apuntado solo se refresca al
+  // abrir la ficha; si hiciera falta al día sin abrirla, consultarlo aquí.
+  Future<void> completarDatos() async {
     final porConsultar = [
-      for (final f in pendientes)
-        if (_estadosConsultados.add(f.idUnico)) f,
+      for (final f in [...favoritos, ...vistos])
+        if ((f.estado == null && f.tipo != 'persona' || f.tipo == 'pelicula') &&
+            _consultadas.add(f.idUnico))
+          f,
     ];
     if (porConsultar.isEmpty) return;
-    final estados = await Future.wait(porConsultar.map(_consultarEstado));
+    final datos = await Future.wait(porConsultar.map(_consultarDatos));
     final nuevos = {
       for (var i = 0; i < porConsultar.length; i++)
-        if (estados[i] != null) porConsultar[i].idUnico: estados[i]!,
+        if (datos[i] != null) porConsultar[i].idUnico: datos[i]!,
     };
-    await _cambiarGuardados(
-      (f) => nuevos[f.idUnico] == null
+    await _cambiarGuardados((f) {
+      final d = nuevos[f.idUnico];
+      return d == null
           ? f
           : f.conValoracion(
-              estado: nuevos[f.idUnico],
+              estado: d.estado ?? f.estado,
               puntuacion: f.puntuacion,
-            ),
-    );
+              fechaEstreno: d.fecha,
+            );
+    });
   }
 
-  /// Estado de una obra guardada según su base de datos; null si no se
-  /// sabe o no hay conexión.
-  static Future<String?> _consultarEstado(FavoritoModel f) async {
+  /// Estado (de la app) y fecha de estreno de una obra guardada según su
+  /// base de datos; null si no hay conexión. La fecha solo en películas.
+  static Future<({String? estado, String? fecha})?> _consultarDatos(
+    FavoritoModel f,
+  ) async {
     try {
-      final estadoApi = switch ((f.tipo, f.fuente)) {
-        ('pelicula', _) => (await TmdbService.obtenerPelicula(
+      if (f.tipo == 'pelicula') {
+        final p = await TmdbService.obtenerPelicula(
           f.id,
           'es-ES',
           conCreditos: false,
-        )).estado,
-        ('serie', 'tmdb') => (await TmdbService.obtenerSerie(
+        );
+        return (
+          estado: FavoritoModel.estadoDeApi(p.estado),
+          fecha: p.fechaEstreno,
+        );
+      }
+      final estadoApi = switch (f.fuente) {
+        'tmdb' => (await TmdbService.obtenerSerie(
           f.id,
           'es-ES',
           conReparto: false,
         )).estado,
-        ('serie', _) => (await TvmazeService.obtenerSerie(f.id))?.estado,
+        'tvmaze' => (await TvmazeService.obtenerSerie(f.id))?.estado,
         _ => (await AnilistService.cargarManga(f.id)).estado,
       };
-      return estadoApi == null ? null : FavoritoModel.estadoDeApi(estadoApi);
+      return (
+        estado: estadoApi == null ? null : FavoritoModel.estadoDeApi(estadoApi),
+        fecha: null,
+      );
     } catch (_) {
       return null;
     }
@@ -405,7 +425,10 @@ class AppController extends ChangeNotifier {
     var cambiado = false;
     List<FavoritoModel> aplicar(List<FavoritoModel> lista) => lista.map((f) {
       final nuevo = cambio(f);
-      cambiado |= nuevo.estado != f.estado || nuevo.puntuacion != f.puntuacion;
+      cambiado |=
+          nuevo.estado != f.estado ||
+          nuevo.puntuacion != f.puntuacion ||
+          nuevo.fechaEstreno != f.fechaEstreno;
       return nuevo;
     }).toList();
     final favoritos = aplicar(usuario.favoritos);

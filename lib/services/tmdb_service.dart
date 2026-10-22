@@ -93,6 +93,8 @@ class TmdbService {
   ) => _resultados('/search/movie', {
     'query': consulta,
     'language': language,
+    // Con la región, "release_date" es la fecha de estreno de España
+    'region': TmdbRefs.region,
   }, PeliculaModel.fromTmdbBusqueda);
 
   /// Busca personas (actores, directores...) en TMDB (/search/person).
@@ -233,8 +235,11 @@ class TmdbService {
   }) async {
     final parametros = <String, String>{
       'language': language,
-      // Reparto y "dónde verlo" en la misma petición
-      if (conCreditos) 'append_to_response': 'credits,watch/providers',
+      // Fechas por país siempre (la de España); reparto y "dónde verlo"
+      // solo con [conCreditos]. Todo en la misma petición.
+      'append_to_response': conCreditos
+          ? 'release_dates,credits,watch/providers'
+          : 'release_dates',
     };
     final json = await _get('/movie/$id', parametros: parametros);
     return PeliculaModel.fromTmdbDetalle(json);

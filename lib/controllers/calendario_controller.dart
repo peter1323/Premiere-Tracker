@@ -115,7 +115,10 @@ class CalendarioController extends ChangeNotifier {
     favoritos = favoritos
         .where((f) => f.tipo == 'serie' || f.tipo == 'pelicula')
         .toList();
-    final firma = '${favoritos.map((f) => f.idUnico).join('|')}#$language';
+    // Con la fecha: si se corrige la de una película, el calendario recarga
+    final firma =
+        '${favoritos.map((f) => '${f.idUnico}:${f.fechaEstreno}').join('|')}'
+        '#$language';
     if (firma == _firmaFavoritos) return;
     _firmaFavoritos = firma;
     _favoritos = favoritos;

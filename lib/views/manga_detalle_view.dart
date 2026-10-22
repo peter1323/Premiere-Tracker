@@ -257,6 +257,7 @@ class _MangaDetalleViewState extends State<MangaDetalleView> {
           id: m.id,
           titulo: m.titulo,
           estadoApi: m.estado,
+          fechaEstreno: m.fechaInicio,
         ),
         if (m.formato.isNotEmpty || m.pais.isNotEmpty) ...[
           const SizedBox(height: 8),

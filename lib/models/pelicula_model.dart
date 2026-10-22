@@ -16,7 +16,10 @@ class PeliculaModel {
   final String fuente; // siempre 'tmdb'
   final String titulo;
   final String sinopsis;
-  final String fechaEstreno; // 'yyyy-MM-dd' o ''
+  final String fechaEstreno; // en España ('yyyy-MM-dd'), o la mundial
+  // Fecha principal de TMDB: la del primer país del mundo (puede ser
+  // otra, p. ej. 19/10 frente al 23/10 de España); '' si no se sabe
+  final String fechaEstrenoMundial;
   final String estado; // uno de los estados normalizados de arriba
   final String? posterUrl;
   final double? puntuacion; // nota media 0-10 (null si no hay)
@@ -30,6 +33,7 @@ class PeliculaModel {
     required this.titulo,
     this.sinopsis = '',
     this.fechaEstreno = '',
+    this.fechaEstrenoMundial = '',
     this.estado = estadoDesconocida,
     this.posterUrl,
     this.puntuacion,
@@ -61,7 +65,8 @@ class PeliculaModel {
       id: json['id'] as int? ?? 0,
       titulo: (json['title'] as String?) ?? '',
       sinopsis: (json['overview'] as String?) ?? '',
-      fechaEstreno: (json['release_date'] as String?) ?? '',
+      fechaEstreno: TmdbRefs.fechaEstrenoEnRegion(json),
+      fechaEstrenoMundial: (json['release_date'] as String?) ?? '',
       estado: _normalizarEstado(json['status'] as String?),
       posterUrl: TmdbRefs.urlImagen(json['poster_path'] as String?),
       puntuacion: (json['vote_average'] as num?)?.toDouble(),

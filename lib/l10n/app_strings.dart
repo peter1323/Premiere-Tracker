@@ -92,11 +92,11 @@ const Map<String, Map<String, String>> cadenas = {
     'sinEstado': 'Sin estado',
     'tuNota': 'Tu nota',
     'sinPuntuar': 'Sin puntuar',
-    'todosEstados': 'Todos los estados',
-    'ordenAnadido': 'Orden en que se añadió',
-    'ordenPuntuacion': 'Por tu nota',
-    'ordenAZ': 'Alfabético (A-Z)',
-    'ordenZA': 'Alfabético (Z-A)',
+    'todosEstados': 'Todos',
+    'ordenAnadido': 'Añadido',
+    'ordenPuntuacion': 'Por nota',
+    'ordenAZ': 'A-Z',
+    'ordenZA': 'Z-A',
     // Favoritos de personas
     'sinPersonasFavoritas': 'No tienes personas en favoritos',
     // Cuenta atrás de estrenos
@@ -106,6 +106,8 @@ const Map<String, Map<String, String>> cadenas = {
     'enDias': 'en {n} días',
     'manana': 'mañana',
     'hoyMinuscula': 'hoy',
+    'estrenoEspana': 'Estreno (ESP)',
+    'estrenoMundial': 'Primer estreno mundial',
     // Recomendaciones
     'recomendaciones': '¿Te gustó esto? También te puede gustar',
     // Avisos de estreno
@@ -323,11 +325,11 @@ const Map<String, Map<String, String>> cadenas = {
     'sinEstado': 'No status',
     'tuNota': 'Your rating',
     'sinPuntuar': 'Not rated',
-    'todosEstados': 'All statuses',
-    'ordenAnadido': 'Order added',
-    'ordenPuntuacion': 'By your rating',
-    'ordenAZ': 'Alphabetical (A-Z)',
-    'ordenZA': 'Alphabetical (Z-A)',
+    'todosEstados': 'All',
+    'ordenAnadido': 'Added',
+    'ordenPuntuacion': 'By rating',
+    'ordenAZ': 'A-Z',
+    'ordenZA': 'Z-A',
     // Favorite people
     'sinPersonasFavoritas': 'You have no people in favorites',
     // Release countdown
@@ -337,6 +339,8 @@ const Map<String, Map<String, String>> cadenas = {
     'enDias': 'in {n} days',
     'manana': 'tomorrow',
     'hoyMinuscula': 'today',
+    'estrenoEspana': 'Release (ESP)',
+    'estrenoMundial': 'First worldwide release',
     // Recommendations
     'recomendaciones': 'If you liked this, you might also like',
     // Release notifications

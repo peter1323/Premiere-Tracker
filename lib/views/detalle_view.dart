@@ -425,6 +425,10 @@ class _CuerpoDetalle extends StatelessWidget {
     final estado = control.serie?.estado ?? control.pelicula?.estado ?? '';
     final estreno =
         control.serie?.fechaEstreno ?? control.pelicula?.fechaEstreno ?? '';
+    // Películas: fecha principal de TMDB (primer país del mundo); si no
+    // coincide con la de España, se muestran las dos
+    final mundial = control.pelicula?.fechaEstrenoMundial ?? '';
+    final dosFechas = mundial.isNotEmpty && mundial != estreno;
     final puntuacion =
         control.serie?.puntuacion ?? control.pelicula?.puntuacion;
     // Nota formateada (p. ej. '7.6'); vacío si no hay puntuación.
@@ -502,14 +506,20 @@ class _CuerpoDetalle extends StatelessWidget {
           const SizedBox(height: 12),
         ],
         if (estreno.isNotEmpty) ...[
-          // Con cuenta atrás si aún no se ha estrenado: "· en 3 días"
+          // Con cuenta atrás si aún no se ha estrenado: "· en 3 días". Si la
+          // película se estrenó antes en otro país, se ven las dos fechas.
           Text(
             [
-              '${t('estreno', idioma)}: $estreno',
+              '${t(dosFechas ? 'estrenoEspana' : 'estreno', idioma)}: $estreno',
               ?enCuantoEstrena(estreno, idioma),
             ].join(' · '),
             style: tema.textTheme.bodyMedium,
           ),
+          if (dosFechas)
+            Text(
+              '${t('estrenoMundial', idioma)}: $mundial',
+              style: tema.textTheme.bodySmall,
+            ),
           const SizedBox(height: 12),
         ],
         // Próximo episodio destacado (solo series)
@@ -551,6 +561,7 @@ class _CuerpoDetalle extends StatelessWidget {
             id: control.serie!.id,
             titulo: control.serie!.titulo,
             estadoApi: control.serie!.estado,
+            fechaEstreno: control.serie!.fechaEstreno,
           )
         else if (control.pelicula != null)
           NotaPersonal(
@@ -559,6 +570,7 @@ class _CuerpoDetalle extends StatelessWidget {
             id: control.pelicula!.id,
             titulo: control.pelicula!.titulo,
             estadoApi: control.pelicula!.estado,
+            fechaEstreno: control.pelicula!.fechaEstreno,
           ),
       ],
     );

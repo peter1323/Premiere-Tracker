@@ -49,19 +49,23 @@ class FavoritoModel {
   /// Identificador único: fuente + tipo + id.
   String get idUnico => '$fuente-$tipo-$id';
 
-  /// Copia con otro estado y otra puntuación (null = quitarlos).
+  /// Copia con otro estado y otra puntuación (null = quitarlos) y, si se
+  /// da, otra fecha de estreno (con su año).
   FavoritoModel conValoracion({
     required String? estado,
     required int? puntuacion,
+    String? fechaEstreno,
   }) => FavoritoModel(
     tipo: tipo,
     fuente: fuente,
     id: id,
     imdbId: imdbId,
     titulo: titulo,
-    anio: anio,
+    anio: fechaEstreno != null && fechaEstreno.length >= 4
+        ? int.tryParse(fechaEstreno.substring(0, 4)) ?? anio
+        : anio,
     posterUrl: posterUrl,
-    fechaEstreno: fechaEstreno,
+    fechaEstreno: fechaEstreno ?? this.fechaEstreno,
     estado: estado,
     puntuacion: puntuacion,
   );

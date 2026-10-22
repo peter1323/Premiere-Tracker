@@ -45,30 +45,34 @@ class ProximosEstrenos extends StatelessWidget {
           ? const Center(child: CircularProgressIndicator())
           : vacio;
     }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          t('proximosEstrenos', idioma),
-          style: Theme.of(context).textTheme.titleMedium,
+    final filas = [
+      for (final e in proximas)
+        FilaEstreno(
+          entrada: e,
+          // Mismos colores que el calendario: series y películas
+          color: e.tipo == 'serie' ? esquema.primary : esquema.tertiary,
+          prefijo: _cuando(e, idioma),
+          onTap: () => DetalleView.abrirEntrada(context, e, idiomaApi(idioma)),
         ),
-        const SizedBox(height: 8),
-        Expanded(
-          child: ListView(
-            children: [
-              for (final e in proximas)
-                FilaEstreno(
-                  entrada: e,
-                  // Mismos colores que el calendario: series y películas
-                  color: e.tipo == 'serie' ? esquema.primary : esquema.tertiary,
-                  prefijo: _cuando(e, idioma),
-                  onTap: () =>
-                      DetalleView.abrirEntrada(context, e, idiomaApi(idioma)),
-                ),
-            ],
+    ];
+    return LayoutBuilder(
+      builder: (context, medidas) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            t('proximosEstrenos', idioma),
+            style: Theme.of(context).textTheme.titleMedium,
           ),
-        ),
-      ],
+          const SizedBox(height: 8),
+          // Sin alto fijo (móvil en horizontal: se desliza la página entera)
+          // la lista no lleva scroll propio; si lo llevara, arrastrar sobre
+          // ella no movería la página y no se podría volver arriba
+          if (medidas.hasBoundedHeight)
+            Expanded(child: ListView(children: filas))
+          else
+            ...filas,
+        ],
+      ),
     );
   }
 

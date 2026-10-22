@@ -64,7 +64,6 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
     31,
   );
 
-
   late final TabController _pestanas = TabController(
     length: 2,
     vsync: this,
@@ -279,7 +278,7 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
                 ...cabecera,
                 // El Año lleva su altura natural: su rejilla no scrollea
                 // sola y la página se encarga de subir y bajar.
-                if (widget.modo == 'anio' || _listaEnMovil)
+                if (widget.modo == 'anio' || _sinRejillaDeHoras)
                   contenido
                 else
                   SizedBox(height: 340, child: contenido),
@@ -302,9 +301,9 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
   /// [paginaScrollea] indica si la página entera se desplaza (móvil
   /// horizontal); solo lo usa la vista de año.
   Widget _vista({required bool paginaScrollea}) {
-    // Android: Día y Semana como lista por días (la rejilla de 24 horas no
-    // cabe y las horas salían aplastadas). Windows sigue con la rejilla.
-    if (_listaEnMovil) return _vistaLista(paginaScrollea: paginaScrollea);
+    // Día y Semana sin rejilla de horas (Android, y Películas en escritorio)
+    // como lista por días; Series en escritorio sigue con la rejilla.
+    if (_sinRejillaDeHoras) return _vistaLista(paginaScrollea: paginaScrollea);
     switch (widget.modo) {
       case 'dia':
         // LayoutBuilder: la densidad se calcula para que las 24 horas
@@ -328,6 +327,7 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
                 onPageChange: (fecha, pagina) => widget.onFecha(fecha),
                 onEventTap: _abrirEventos,
                 eventTileBuilder: _tileHora,
+                fullDayEventBuilder: _diaCompleto,
                 dateStringBuilder: _tituloDia,
                 // La navegación ya es con las flechas y el botón "Hoy":
                 // sin esto, al pinchar el título se abría el showDatePicker
@@ -366,6 +366,7 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
                 onPageChange: (fecha, pagina) => widget.onFecha(fecha),
                 onEventTap: _abrirEventos,
                 eventTileBuilder: _tileHora,
+                fullDayEventBuilder: _diaCompleto,
                 headerStringBuilder: _tituloSemana,
                 // Sin columna de número de semana (ocupaba una columna entera)
                 weekNumberBuilder: (_) => const SizedBox.shrink(),
@@ -470,18 +471,25 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
     );
   }
 
-  /// true en Android con Día o Semana: se usa la lista por días.
-  bool get _listaEnMovil =>
-      defaultTargetPlatform == TargetPlatform.android &&
+  /// Día y Semana sin rejilla de horas: siempre en Android (no cabe) y, en
+  /// escritorio, en la pestaña Películas (no tienen hora: la rejilla
+  /// quedaba vacía y las películas apretadas arriba).
+  bool get _sinRejillaDeHoras =>
+      (defaultTargetPlatform == TargetPlatform.android ||
+          widget.pestana == 'peliculas') &&
       (widget.modo == 'dia' || widget.modo == 'semana');
 
-  /// Día y Semana en Android: barra morada con flechas y, debajo, la lista
-  /// de estrenos de cada día (el día visible, o los 7 de la semana), con
-  /// su hora si la hay. Con [paginaScrollea] (horizontal) la lista va a su
-  /// altura natural y es la página la que se desliza.
+  /// Día y Semana sin horas: barra morada con flechas y, debajo, los
+  /// estrenos de cada día (el día visible, o los 7 de la semana) con su
+  /// hora si la hay. En Android los días van uno debajo de otro; la
+  /// Semana de escritorio va en 7 columnas, una por día. Con
+  /// [paginaScrollea] (horizontal) la lista va a su altura natural y es la
+  /// página la que se desliza.
   Widget _vistaLista({required bool paginaScrollea}) {
     final esquema = Theme.of(context).colorScheme;
     final esSemana = widget.modo == 'semana';
+    final enColumnas =
+        esSemana && defaultTargetPlatform != TargetPlatform.android;
     final f = widget.fechaVisible;
     // Semana: empieza en el lunes de la semana visible
     final inicio = esSemana
@@ -502,38 +510,57 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
         : widget.peliculasPorDia;
     final hoy = _claveDe(DateTime.now());
 
+    // Lo de un día: cabecera (en Semana; hoy resaltado), sus estrenos por
+    // hora y "Sin estrenos" si no hay ninguno
+    List<Widget> contenidoDia(DateTime dia) => [
+      if (esSemana)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 12, 4, 4),
+          child: Text(
+            _tituloDia(dia),
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: _claveDe(dia) == hoy ? esquema.primary : esquema.onSurface,
+            ),
+          ),
+        ),
+      for (final e in [...?porDia[_claveDe(dia)]]..sort(compararEstrenos))
+        FilaEstreno(
+          entrada: e,
+          color: colorEvento,
+          prefijo: e.hora,
+          onTap: () => widget.onAbrirEntrada(e),
+        ),
+      if ((porDia[_claveDe(dia)] ?? const []).isEmpty)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+          child: Text(
+            t('sinEstrenos', widget.idioma),
+            style: TextStyle(color: esquema.outline),
+          ),
+        ),
+    ];
+
     final filas = <Widget>[
-      for (final dia in dias) ...[
-        // En Semana, cabecera de cada día ("Lun 19/10/2026"); hoy resaltado
-        if (esSemana)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 12, 4, 4),
-            child: Text(
-              _tituloDia(dia),
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                color: _claveDe(dia) == hoy
-                    ? esquema.primary
-                    : esquema.onSurface,
+      if (enColumnas)
+        // Escritorio: una columna por día, una al lado de otra
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final dia in dias)
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: contenidoDia(dia),
+                  ),
+                ),
               ),
-            ),
-          ),
-        for (final e in [...?porDia[_claveDe(dia)]]..sort(compararEstrenos))
-          FilaEstreno(
-            entrada: e,
-            color: colorEvento,
-            prefijo: e.hora,
-            onTap: () => widget.onAbrirEntrada(e),
-          ),
-        if ((porDia[_claveDe(dia)] ?? const []).isEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
-            child: Text(
-              t('sinEstrenos', widget.idioma),
-              style: TextStyle(color: esquema.outline),
-            ),
-          ),
-      ],
+          ],
+        )
+      else
+        for (final dia in dias) ...contenidoDia(dia),
       const SizedBox(height: 8),
     ];
 
@@ -915,7 +942,7 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
   }
 
   /// Celda del mes: número de día (círculo si es hoy) y sus estrenos
-  /// como chips de color, con los colores de la app.
+  /// como chips de color (en el móvil, solo cuántos hay).
   Widget _contenidoCeldaMes(
     DateTime dia,
     List<EntradaCalendario> lista,
@@ -955,15 +982,37 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
               ),
             ),
             const SizedBox(height: 2),
-            for (final entrada in lista.take(3)) _chipDe(entrada, colorEvento),
-            if (lista.length > 3)
-              Padding(
-                padding: const EdgeInsets.only(left: 3),
-                child: Text(
-                  '+${lista.length - 3}',
-                  style: TextStyle(fontSize: 11, color: colorTexto),
+            if (defaultTargetPlatform == TargetPlatform.android) ...[
+              // Móvil: solo cuántos estrenos hay (los nombres no cabían);
+              // al tocar el día se abre su vista Día con la lista
+              if (lista.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7),
+                  decoration: BoxDecoration(
+                    color: colorEvento,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${lista.length}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: colorTextoSobre(colorEvento),
+                    ),
+                  ),
                 ),
-              ),
+            ] else ...[
+              for (final entrada in lista.take(3))
+                _chipDe(entrada, colorEvento),
+              if (lista.length > 3)
+                Padding(
+                  padding: const EdgeInsets.only(left: 3),
+                  child: Text(
+                    '+${lista.length - 3}',
+                    style: TextStyle(fontSize: 11, color: colorTexto),
+                  ),
+                ),
+            ],
           ],
         ),
       ),
@@ -986,10 +1035,7 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
           entrada.texto,
           maxLines: 1,
           overflow: TextOverflow.clip,
-          style: TextStyle(
-            fontSize: 11,
-            color: colorTextoSobre(color),
-          ),
+          style: TextStyle(fontSize: 11, color: colorTextoSobre(color)),
         ),
       ),
     );
@@ -1048,6 +1094,25 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
   String _claveDe(DateTime fecha) =>
       '${fecha.year}-${fecha.month.toString().padLeft(2, '0')}-'
       '${fecha.day.toString().padLeft(2, '0')}';
+
+  /// Estrenos sin hora (películas) en Día y Semana de escritorio: las
+  /// mismas chapas que en la vista Mes (el estilo del paquete salía con
+  /// texto gris sobre rosa, casi ilegible).
+  Widget _diaCompleto(
+    List<CalendarEventData<EntradaCalendario>> eventos,
+    DateTime fecha,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final e in eventos)
+            if (e.event != null) _chipDe(e.event!, e.color),
+        ],
+      ),
+    );
+  }
 
   /// Tile de una hora en las vistas de día y semana: barra de color
   /// con el título del estreno (el del paquete salía sin texto).

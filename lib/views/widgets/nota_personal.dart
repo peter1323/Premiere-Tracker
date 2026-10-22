@@ -1,7 +1,8 @@
 // WIDGET compartido de las fichas (series, películas y mangas): "Tu nota"
 // 1-10, aparte de la de TMDB/TVMaze. Solo aparece si la obra está en
-// Favoritos o Vistos. Además apunta en lo guardado el estado que da la
-// base de datos (En emisión, Finalizado...), que se ve en las listas.
+// Favoritos o Vistos. Además pone al día en lo guardado el estado y la
+// fecha de estreno que da la base de datos (En emisión, Finalizado...),
+// que se ven en las listas.
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -16,6 +17,7 @@ class NotaPersonal extends StatelessWidget {
   final int id;
   final String titulo;
   final String estadoApi; // estado de la ficha (SerieModel.estado...)
+  final String fechaEstreno; // fecha de la ficha ('' si no hay)
 
   const NotaPersonal({
     super.key,
@@ -24,6 +26,7 @@ class NotaPersonal extends StatelessWidget {
     required this.id,
     required this.titulo,
     required this.estadoApi,
+    required this.fechaEstreno,
   });
 
   @override
@@ -36,9 +39,15 @@ class NotaPersonal extends StatelessWidget {
     // Estado al día con la base de datos (tras el build: no se puede
     // notificar durante él; si no cambió, no se guarda nada)
     final estado = FavoritoModel.estadoDeApi(estadoApi);
-    if (estado != null && estado != guardado.estado) {
+    final fecha = fechaEstreno.isEmpty ? null : fechaEstreno;
+    if ((estado != null && estado != guardado.estado) ||
+        (fecha != null && fecha != guardado.fechaEstreno)) {
       WidgetsBinding.instance.addPostFrameCallback(
-        (_) => app.actualizarEstado(guardado, estado),
+        (_) => app.actualizarDesdeFicha(
+          guardado,
+          estado: estado,
+          fechaEstreno: fecha,
+        ),
       );
     }
 
