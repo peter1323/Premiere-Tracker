@@ -164,7 +164,7 @@ ie4uinit -show
 
 ## Ideas para el futuro
 
-Ideas pensadas pero aún no hechas. Si alguien las pide, se pueden añadir.
+Ideas pensadas pero no implementadas. Si alguien las quiere, se pueden añadir.
 
 ### Avisos de capítulos nuevos de mangas
 
