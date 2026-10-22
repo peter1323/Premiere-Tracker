@@ -47,5 +47,7 @@ app.*.map.json
 # Widget Preview related
 .widget_preview/
 
-# API key privada (nunca se sube al repositorio)
+# Claves privadas (nunca se suben al repositorio): .env y variantes
+# como .env.local
 .env
+.env.*
