@@ -10,22 +10,25 @@ Aplicación multiplataforma para Windows y Android desarrollada con Flutter y Da
 
 - **Usuarios locales con PIN**: cada usuario tiene su propio perfil con un PIN de 4 dígitos cifrado con SHA-256 (nunca en texto plano) y sus propios favoritos, vistos, notas, tema e idioma. Se entra automáticamente al escribir los 4 dígitos; si el PIN está mal se avisa y se limpia el campo, y **tras dos fallos aparece una pista con los dos primeros dígitos**. Desde el propio diálogo de acceso también se puede **cambiar el PIN** (validando antes el actual). El tema elegido se recuerda también en la pantalla de usuarios.
 - **Clave TMDB configurable**: la clave de TMDB se introduce desde la propia app (pantalla de usuarios → «Clave TMDB», con botón para obtenerla) y se guarda en el dispositivo; por eso las versiones compiladas (`.exe` y APK) **no llevan ninguna clave embebida** y cada persona usa la suya.
-- **Búsqueda global anti-fallos**: una sola caja busca **series, películas y personas a la vez** (en paralelo, con tiempos de espera de 10 s). Si una API falla, la otra sigue funcionando y se muestra un aviso claro; si fallan las dos, se avisa de "Sin conexión o servicios no disponibles". Los resultados aparecen en tarjetas con botones de favorito ❤️ y visto 👁️.
+- **Búsqueda global anti-fallos**: una sola caja busca **series, películas y personas a la vez** (en paralelo, con tiempos de espera de 10 s). Si una API falla, la otra sigue funcionando y se muestra un aviso claro; si fallan las dos, se avisa de "Sin conexión o servicios no disponibles". Los resultados aparecen en tarjetas con botones de favorito ❤️ y visto 👁️ (en el móvil en vertical, de dos en dos).
 - **Próximamente**: en Inicio, mientras no se busca nada, aparecen los estrenos de tus favoritos de hoy a 6 días vista (episodios y películas), y al pulsarlos se abre su ficha.
-- **Avisos de estreno (Android)**: notificación del móvil a las 10:00 del día de cada estreno de tus favoritos ("Hoy se estrena · T1E4 · …"), aunque la app esté cerrada. Se reprograman al abrir la app.
+- **Avisos de estreno**:
+  - **Android**: notificación del móvil a las 10:00 del día de cada estreno de tus favoritos («Hoy sale el episodio T1E4 de …»), aunque la app esté cerrada. Se reprograman al abrir la app.
+  - **Windows**: mientras la app está abierta, al entrar y cada hora avisa de los estrenos de hoy de tus favoritos y de lo que está en emisión o planeado, una sola vez por estreno.
+  - Se activan o desactivan en **Ajustes → Notificaciones de estreno** (activadas por defecto).
 - **Selector de fuente TMDB | TVMaze**: en las series se puede cambiar entre las dos fuentes; se enlazan entre sí mediante el ID de IMDb. Si una fuente no está disponible, su opción queda desactivada.
-- **Detalle de series y películas**: póster, sinopsis, estado (en emisión, finalizada, cancelada...), fecha de estreno, géneros, puntuación, temporadas desplegables con sus episodios (número, título y fecha), el próximo episodio destacado, **dónde verlo** en España (plataformas de streaming con su logo; datos de JustWatch vía TMDB) y el **reparto con cada actor pulsable** (abre su ficha). Incluye los botones "Añadir a favoritos" y "Añadir a vistos".
-- **Fichas de persona**: foto, biografía y créditos (series y películas en las que ha participado), con enlaces a las webs de las APIs.
-- **Lectura (mangas, manhwas, manhuas y novelas)**: buscador sobre AniList con dos pestañas — **Manga / Manhwa / Manhua** y **Novelas** — lanzando las dos búsquedas en paralelo con una sola escritura. La ficha incluye portada, estado (con capítulos y tomos marcados como «?» si aún no hay total), puntuación, formato, país, fecha de inicio, **autores**, géneros, **sinopsis en español** cuando MangaDex la tiene (si no, la de AniList) y el **último capítulo publicado por idioma** (español de España, español latino e inglés) consultado a MangaDex con límite de peticiones y caché. Tiene botones de **favorito** y **marcar como leído**; los mangas guardados se abren desde Favoritos/Vistos recargando la ficha completa desde AniList.
-- **Calendario** con cuatro vistas y pestañas Series / Películas:
-  - **Día** y **Semana**: flechas para cambiar de periodo y botón morado "Hoy". En Windows, rejilla por horas; en Android, lista de estrenos por día (con su hora), más legible en vertical y en horizontal.
-  - **Mes**: rejilla con los estrenos de cada día, y selector de mes y año (de 2 años atrás a 6 años adelante).
+- **Detalle de series y películas**: póster, sinopsis, estado (en emisión, finalizada, cancelada...), fecha de estreno con **cuenta atrás** («· en 3 días»), géneros, puntuación, temporadas desplegables con sus episodios (número, título y fecha), el próximo episodio destacado, **dónde verlo** en España (plataformas de streaming con su logo; datos de JustWatch vía TMDB), el **reparto con cada actor pulsable** (abre su ficha) y, al final, **recomendaciones** de TMDB («¿Te gustó esto? También te puede gustar», también con la fuente TVMaze). En las películas se usa la **fecha de estreno en España** y, si se estrenó antes en otro país, se muestra también el **primer estreno mundial**. Incluye los botones "Añadir a favoritos" y "Añadir a vistos" y, si está guardada, **tu nota personal de 1 a 10**.
+- **Fichas de persona**: foto, biografía y créditos (series y películas en las que ha participado), con enlaces a las webs de las APIs y botón para **guardarla en Favoritos**.
+- **Lectura (mangas, manhwas, manhuas y novelas)**: buscador sobre AniList con dos pestañas — **Manga / Manhwa / Manhua** y **Novelas** — lanzando las dos búsquedas en paralelo con una sola escritura. La ficha incluye portada, estado (con capítulos y tomos marcados como «?» si aún no hay total), puntuación, formato, país, fecha de inicio, **autores**, géneros, **sinopsis en español** cuando MangaDex la tiene (si no, la de AniList) y el **último capítulo publicado por idioma** (español de España, español latino e inglés) consultado a MangaDex con límite de peticiones y caché. Tiene botones de **favorito** y **marcar como leído**, y tu nota personal; los mangas guardados se abren desde Favoritos/Vistos recargando la ficha completa desde AniList.
+- **Calendario** con cuatro vistas y pestañas Series / Películas (solo de tus favoritos):
+  - **Día** y **Semana**: flechas para cambiar de periodo y botón morado "Hoy". En Windows, las series van en rejilla por horas y las películas sin horas (lista en Día y siete columnas en Semana); en Android, lista de estrenos por día (con su hora), legible en vertical y en horizontal.
+  - **Mes**: rejilla con los estrenos de cada día (en el móvil, solo cuántos hay; al tocar el día se abre su lista), y selector de mes y año (de 2 años atrás a 6 años adelante).
   - **Año**: rejilla de los 12 meses con el número de estrenos de cada uno; al pulsar un mes se abre su vista Mes.
-  - Los datos se cargan solo del periodo visible, respetando el límite de peticiones de TVMaze (20 cada 10 segundos, con caché en memoria).
-- **Favoritos**: lista con buscador por nombre y filtro Todo / Series / Películas / Manga / Manhwa / Manhua / Novelas.
-- **Vistos**: misma búsqueda y filtro que favoritos, con el botón 👁️ para apuntar qué ya has visto (para los mangas se usa como **leídos**).
+  - Los datos se cargan solo del periodo visible, en paralelo y respetando el límite de peticiones de TVMaze (20 cada 10 segundos, con caché en memoria que comparten el calendario y Próximamente).
+- **Favoritos**: lista con buscador por nombre y filtro Todo / Series / Películas / Manga / Manhwa / Manhua / Novelas / **Personas**, con **cuántos hay** de cada tipo entre paréntesis. Cada tarjeta muestra el **estado** que da la base de datos (En emisión, En espera, Abandonado, Planeado o Finalizado), tu nota y la cuenta atrás si aún no se ha estrenado («Estrena en 3 días», «¡Hoy estrena!»). Filtro por estado y orden por el de añadido o por tu nota; en Personas, por el de añadido o alfabético.
+- **Vistos**: misma búsqueda, filtros y orden que favoritos (sin Personas), con el botón 👁️ para apuntar qué ya has visto (para los mangas se usa como **leídos**).
 - **Notas**: tabla de tres columnas (**Título | Última vista | Más datos**) para recordar dónde se dejó cada serie o película; solo el título es obligatorio, con buscador, edición y borrado; las notas recientes aparecen primero.
-- **Ajustes**: idioma (español / inglés), tema (claro / oscuro), copia de seguridad (exportar e importar **favoritos, vistos y notas** a un `.json` —incluidos los mangas y novelas guardados—, compatible con copias antiguas que solo tenían favoritos), gestión de usuarios (cambiar nombre, cambiar PIN y borrar usuario) y créditos.
+- **Ajustes**: idioma (español / inglés), tema (claro / oscuro; oscuro por defecto), notificaciones de estreno, copia de seguridad (exportar e importar **favoritos, vistos y notas** a un `.json` —incluidos mangas, novelas, personas, estados y notas personales—, compatible con copias antiguas), gestión de usuarios (cambiar nombre, cambiar PIN y borrar usuario) y créditos.
 - **Interfaz**: navegación lateral fija en Windows e inferior en móvil (Inicio, Lectura, Calendario, Favoritos, Vistos, Notas y Ajustes), barra superior con interruptor de tema y menú de usuario, diseño Material 3 con tema claro y oscuro adaptable al redimensionar (vertical y horizontal), y en Windows la ventana **arranca maximizada**.
 
 ## Tecnologías
@@ -37,8 +40,8 @@ Aplicación multiplataforma para Windows y Android desarrollada con Flutter y Da
 - **crypto** – cifrado SHA-256 de los PIN
 - **file_picker** – exportar / importar copias de seguridad
 - **url_launcher** – enlaces a las webs de las APIs y a "dónde verlo"
-- **flutter_local_notifications** + **timezone** – avisos de estreno en Android
-- **calendar_view** (fijado a 2.0.0) – vistas de Día y Semana del calendario (Mes y Año son personalizadas)
+- **flutter_local_notifications** + **timezone** – avisos de estreno (Android y Windows)
+- **calendar_view** (fijado a 2.0.0) – rejilla por horas de Día y Semana en Windows (el resto de vistas son propias)
 
 ## APIs usadas
 
@@ -119,6 +122,18 @@ build\app\outputs\apk\release\Premiere-Tracker.apk
 ```
 
 Se instala en el móvil copiando el archivo o con `flutter install`. **El APK no lleva ninguna clave TMDB embebida**: cada persona que lo instale debe introducir su propia clave en la app (pantalla de usuarios → «Clave TMDB»).
+
+## Pruebas
+
+- **Tests unitarios** (datos, copias de seguridad, estados, fechas, avisos...):
+  ```bash
+  flutter test
+  ```
+- **Prueba de integración**: recorre la app entera como lo haría una persona (usuarios, notas, calendario, búsqueda, favoritos, personas, ajustes...). No toca los datos reales del equipo.
+  ```bash
+  flutter test integration_test/recorrido_app_test.dart -d windows
+  ```
+  En el móvil se usa el id del dispositivo en lugar de `windows` (ojo: al terminar, `flutter test` desinstala la app del móvil y se pierden sus datos). Opcionalmente, `--dart-define=TMDB_KEY=<tu clave>` prueba también TMDB y `--dart-define=HORIZONTAL=true` gira la app a horizontal.
 
 ## Icono de la app
 
