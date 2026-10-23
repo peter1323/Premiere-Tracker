@@ -11,17 +11,14 @@ import '../controllers/app_controller.dart';
 import '../controllers/calendario_controller.dart';
 import '../controllers/inicio_controller.dart';
 import '../l10n/app_strings.dart';
-import '../models/pelicula_model.dart';
 import '../models/persona_model.dart';
-import '../models/serie_model.dart';
-import 'detalle_view.dart';
 import 'persona_view.dart';
+import 'tarjetas_titulos.dart';
 import 'widgets/estado_vacio.dart';
 import 'widgets/proximos_estrenos.dart';
 import 'widgets/selector_fuente.dart';
 import 'widgets/tarjeta_persona.dart';
 import 'widgets/rejilla_tarjetas.dart';
-import 'widgets/tarjeta_resultado.dart';
 
 /// Pantalla de Inicio: buscador (TMDB y TVMaze en paralelo) con
 /// resultados en pestañas Series | Películas | Personas.
@@ -211,7 +208,6 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
 
   /// Pestaña de series: selector de fuente + tarjetas.
   Widget _pestanaSeries(InicioController control, String idioma) {
-    final app = context.read<AppController>();
     final series = control.seriesVisibles;
 
     return Column(
@@ -244,9 +240,7 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
         else
           Expanded(
             child: RejillaTarjetas(
-              tarjetas: series
-                  .map((s) => _tarjetaSerie(s, app, idioma))
-                  .toList(),
+              tarjetas: series.map((s) => tarjetaSerie(context, s)).toList(),
             ),
           ),
       ],
@@ -255,7 +249,6 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
 
   /// Pestaña de películas (solo TMDB).
   Widget _pestanaPeliculas(InicioController control, String idioma) {
-    final app = context.read<AppController>();
     final peliculas = control.peliculasVisibles;
 
     if (peliculas.isEmpty) {
@@ -265,7 +258,7 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
       );
     }
     return RejillaTarjetas(
-      tarjetas: peliculas.map((p) => _tarjetaPelicula(p, app, idioma)).toList(),
+      tarjetas: peliculas.map((p) => tarjetaPelicula(context, p)).toList(),
     );
   }
 
@@ -294,60 +287,6 @@ class _CuerpoInicioState extends State<_CuerpoInicio> {
         final language = idiomaApi(idioma);
         PersonaView.abrir(context, persona, language);
       },
-    );
-  }
-
-  Widget _tarjetaSerie(SerieModel serie, AppController app, String idioma) {
-    final esFav = app.esFavorito(
-      serie.fuente,
-      'serie',
-      serie.id,
-      titulo: serie.titulo,
-    );
-    final language = idiomaApi(idioma);
-    return TarjetaResultado(
-      titulo: serie.titulo,
-      anio: serie.anio,
-      posterUrl: serie.posterUrl,
-      esFavorito: esFav,
-      onFavorito: () => app.alternarFavoritoDeSerie(serie),
-      esVisto: app.esVisto(
-        serie.fuente,
-        'serie',
-        serie.id,
-        titulo: serie.titulo,
-      ),
-      onVisto: () => app.alternarVistoDeSerie(serie),
-      onAbrir: () => DetalleView.abrirSerie(context, serie, language),
-    );
-  }
-
-  Widget _tarjetaPelicula(
-    PeliculaModel pelicula,
-    AppController app,
-    String idioma,
-  ) {
-    final esFav = app.esFavorito(
-      'tmdb',
-      'pelicula',
-      pelicula.id,
-      titulo: pelicula.titulo,
-    );
-    final language = idiomaApi(idioma);
-    return TarjetaResultado(
-      titulo: pelicula.titulo,
-      anio: pelicula.anio,
-      posterUrl: pelicula.posterUrl,
-      esFavorito: esFav,
-      onFavorito: () => app.alternarFavoritoDePelicula(pelicula),
-      esVisto: app.esVisto(
-        'tmdb',
-        'pelicula',
-        pelicula.id,
-        titulo: pelicula.titulo,
-      ),
-      onVisto: () => app.alternarVistoDePelicula(pelicula),
-      onAbrir: () => DetalleView.abrirPelicula(context, pelicula, language),
     );
   }
 }

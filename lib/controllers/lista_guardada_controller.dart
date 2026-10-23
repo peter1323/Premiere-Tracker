@@ -46,12 +46,17 @@ class ListaGuardadaController extends ChangeNotifier {
 
   /// Elementos que pasan el filtro de tipo, el de estado y el buscador,
   /// en el orden elegido.
-  List<FavoritoModel> get filtrados {
+  List<FavoritoModel> get filtrados => filtradosDe(_filtro);
+
+  /// Lo mismo para el tipo [tipo]: la vista dibuja también las páginas de
+  /// al lado para poder deslizar de un tipo a otro.
+  List<FavoritoModel> filtradosDe(String tipo) {
+    final personas = tipo == 'persona';
     final texto = _consulta.trim().toLowerCase();
     final lista = _lista.where((f) {
-      final coincideTipo = _filtro == 'todo' || f.tipo == _filtro;
+      final coincideTipo = tipo == 'todo' || f.tipo == tipo;
       final coincideEstado =
-          esPersonas ||
+          personas ||
           _filtroEstado == 'todos' ||
           (_filtroEstado == 'sin'
               ? f.estado == null

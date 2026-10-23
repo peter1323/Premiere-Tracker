@@ -132,6 +132,84 @@ class TmdbService {
     }, PeliculaModel.fromTmdbBusqueda),
   );
 
+  // Caché de las listas de géneros de TMDB (cambian muy poco).
+  static final _cacheGeneros = CacheFuturos();
+
+  /// Id de TMDB del género [nombre] para 'tv' o 'movie' (null si no
+  /// existe). Se compara en español y en inglés porque la ficha puede
+  /// traer el nombre de TMDB (en el idioma de la app) o de TVMaze (en
+  /// inglés). Si no hay coincidencia exacta vale una parte de un género
+  /// compuesto: "Action" encaja en "Action & Adventure".
+  static Future<int?> _idGenero(String tipo, String nombre) async {
+    final listas = await Future.wait([
+      for (final language in ['es-ES', 'en-US'])
+        _cacheGeneros.obtener(
+          '$tipo-$language',
+          () => _get('/genre/$tipo/list', parametros: {'language': language}),
+        ),
+    ]);
+    final buscado = nombre.toLowerCase().replaceAll('-', ' ');
+    final generos = [
+      for (final lista in listas)
+        for (final g in lista['genres'] as List<dynamic>? ?? const [])
+          (id: g['id'] as int, nombre: (g['name'] as String).toLowerCase()),
+    ];
+    for (final g in generos) {
+      if (g.nombre.replaceAll('-', ' ') == buscado) return g.id;
+    }
+    for (final g in generos) {
+      final partes = g.nombre.split(RegExp(r' & | y '));
+      if (partes.contains(buscado)) return g.id;
+    }
+    return null;
+  }
+
+  /// Títulos más populares del género [genero] (/discover/tv o
+  /// /discover/movie), o de la palabra clave [idPalabraClave] si se da.
+  /// Lista vacía si TMDB no tiene ese género.
+  static Future<List<T>> _porGenero<T>(
+    String tipo,
+    String genero,
+    String language,
+    int? idPalabraClave,
+    T Function(Map<String, dynamic>) desde,
+  ) async {
+    final id = idPalabraClave ?? await _idGenero(tipo, genero);
+    if (id == null) return [];
+    return _resultados('/discover/$tipo', {
+      idPalabraClave == null ? 'with_genres' : 'with_keywords': '$id',
+      'sort_by': 'popularity.desc',
+      'language': language,
+      if (tipo == 'movie') 'region': TmdbRefs.region,
+    }, desde);
+  }
+
+  /// Series populares de un género o palabra clave (al tocarlo en la ficha).
+  static Future<List<SerieModel>> seriesPorGenero(
+    String genero,
+    String language, {
+    int? idPalabraClave,
+  }) => _porGenero(
+    'tv',
+    genero,
+    language,
+    idPalabraClave,
+    SerieModel.fromTmdbBusqueda,
+  );
+
+  /// Películas populares de un género o palabra clave (al tocarlo en la ficha).
+  static Future<List<PeliculaModel>> peliculasPorGenero(
+    String genero,
+    String language, {
+    int? idPalabraClave,
+  }) => _porGenero(
+    'movie',
+    genero,
+    language,
+    idPalabraClave,
+    PeliculaModel.fromTmdbBusqueda,
+  );
+
   /// Ficha de una persona (/person/{id}): biografía, nacimiento,
   /// lugar y también el IMDb anexado (external_ids) como puente.
   static Future<PersonaModel> obtenerPersona(int id, String language) async {
@@ -172,9 +250,9 @@ class TmdbService {
     bool conReparto = true,
   }) async {
     final parametros = <String, String>{'language': language};
-    // Reparto y "dónde verlo" en la misma petición
+    // Reparto, "dónde verlo" y palabras clave en la misma petición
     if (conReparto) {
-      parametros['append_to_response'] = 'credits,watch/providers';
+      parametros['append_to_response'] = 'credits,watch/providers,keywords';
     }
     final json = await _get('/tv/$id', parametros: parametros);
     final serie = SerieModel.fromTmdbDetalle(json);
@@ -238,7 +316,7 @@ class TmdbService {
       // Fechas por país siempre (la de España); reparto y "dónde verlo"
       // solo con [conCreditos]. Todo en la misma petición.
       'append_to_response': conCreditos
-          ? 'release_dates,credits,watch/providers'
+          ? 'release_dates,credits,watch/providers,keywords'
           : 'release_dates',
     };
     final json = await _get('/movie/$id', parametros: parametros);

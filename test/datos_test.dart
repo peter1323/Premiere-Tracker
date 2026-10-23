@@ -10,6 +10,7 @@ import 'package:premiere_tracker/controllers/avisos_controller.dart';
 import 'package:premiere_tracker/controllers/calendario_controller.dart';
 import 'package:premiere_tracker/controllers/lista_guardada_controller.dart';
 import 'package:premiere_tracker/models/favorito_model.dart';
+import 'package:premiere_tracker/models/manga_model.dart';
 import 'package:premiere_tracker/models/nota_model.dart';
 import 'package:premiere_tracker/models/serie_model.dart';
 import 'package:premiere_tracker/models/usuario_model.dart';
@@ -380,5 +381,14 @@ void main() {
         expect(prefs.getString('usuarios'), corrupto); // intacto
       },
     );
+  });
+
+  test('la sinopsis separa el crédito de origen y quita huecos', () {
+    final r = separarCredito('Goku.\n\n\n\nSe aburre.\n(Source: MANGA Plus)');
+    expect(r.texto, 'Goku.\n\nSe aburre.');
+    expect(r.credito, 'MANGA Plus');
+    final dos = separarCredito('Dos escuelas.\n(Source: Twitter Oficial (JA))');
+    expect(dos.credito, 'Twitter Oficial (JA)');
+    expect(separarCredito('Sin crédito').credito, isNull);
   });
 }

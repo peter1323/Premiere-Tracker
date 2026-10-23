@@ -15,6 +15,8 @@ import '../models/manga_model.dart';
 import '../services/anilist_service.dart';
 import '../services/enlace_service.dart';
 import '../services/mangadex_service.dart';
+import 'genero_view.dart';
+import 'widgets/fila_botones.dart';
 import 'widgets/tarjeta_manga.dart';
 import 'widgets/nota_personal.dart';
 
@@ -148,10 +150,15 @@ class _MangaDetalleViewState extends State<MangaDetalleView> {
     // Sinopsis en español si MangaDex la tiene (cargada al abrir la ficha);
     // si no, la de AniList (casi siempre en inglés).
     final sinEs = control.sinopsisEs;
-    String sinopsis = m.sinopsis;
-    if (strings == 'es' && sinEs != null && sinEs.isNotEmpty) {
-      sinopsis = sinEs;
-    }
+    final deMangadex = strings == 'es' && sinEs != null && sinEs.isNotEmpty;
+    // El crédito de origen ("(Source: MANGA Plus)") se quita del texto y
+    // se muestra debajo, siempre con la web de la que viene la sinopsis
+    final (:texto, :credito) = separarCredito(deMangadex ? sinEs : m.sinopsis);
+    final sinopsis = texto;
+    final fuenteSinopsis = [
+      deMangadex ? 'MangaDex' : 'AniList',
+      ?credito,
+    ].join(' · ');
     final tama = MediaQuery.of(context).size.width;
     final doble = tama > 950;
     // En pantallas estrechas (móvil vertical) la portada se pone arriba
@@ -220,11 +227,9 @@ class _MangaDetalleViewState extends State<MangaDetalleView> {
         ),
         const SizedBox(height: 12),
         // Guardar en Favoritos / Leídos (mismo sistema que
-        // las series y películas: se exportan igual).
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
+        // las series y películas: se exportan igual), uno al lado del otro.
+        FilaBotones(
+          botones: [
             FilledButton.tonalIcon(
               onPressed: () => app.alternarFavoritoDeManga(m),
               icon: Icon(
@@ -291,33 +296,40 @@ class _MangaDetalleViewState extends State<MangaDetalleView> {
             children: m.autores.map((a) => _Etiqueta(texto: a)).toList(),
           ),
         ],
+        // Géneros y etiquetas de AniList: cada uno abre los mangas o
+        // novelas populares del mismo
         if (m.generos.isNotEmpty) ...[
           const SizedBox(height: 12),
           _Seccion(titulo: t('generos', strings)),
           const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: m.generos
-                .map((g) => _Etiqueta(texto: traducirGenero(g, strings)))
-                .toList(),
-          ),
+          GeneroView.chips(context, generos: m.generos, tipo: m.formato),
+        ],
+        if (m.etiquetas.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _Seccion(titulo: t('palabrasClave', strings)),
+          const SizedBox(height: 6),
+          GeneroView.chips(context, etiquetas: m.etiquetas, tipo: m.formato),
         ],
         if (sinopsis.isNotEmpty) ...[
           const SizedBox(height: 12),
           _Seccion(titulo: t('sinopsis', strings)),
           const SizedBox(height: 6),
           Text(sinopsis),
+          const SizedBox(height: 6),
+          Text(
+            '${t('fuente', strings)}: $fuenteSinopsis',
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: Theme.of(context).colorScheme.outline),
+          ),
         ],
         const SizedBox(height: 12),
         _Seccion(titulo: t('ultimoCapitulo', strings)),
         const SizedBox(height: 6),
         _UltimoCapitulo(controlador: control),
         const SizedBox(height: 16),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
+        // Enlaces a la ficha en AniList y MangaDex
+        FilaBotones(
+          botones: [
             if (m.url.isNotEmpty)
               FilledButton.icon(
                 onPressed: () => EnlaceService.abrir(m.url),

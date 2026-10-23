@@ -47,10 +47,17 @@ class ListaGuardadaView extends StatefulWidget {
 
 class _ListaGuardadaViewState extends State<ListaGuardadaView> {
   final TextEditingController _buscador = TextEditingController();
+  // Páginas de tipos (Todo, Series...): se pasa de una a otra deslizando
+  final PageController _paginas = PageController();
+  // Una clave por botón de tipo, para hacer visible el elegido
+  final Map<String, GlobalKey> _botones = {
+    for (final (valor, _) in _tipos) valor: GlobalKey(),
+  };
 
   @override
   void dispose() {
     _buscador.dispose();
+    _paginas.dispose();
     super.dispose();
   }
 
@@ -59,7 +66,12 @@ class _ListaGuardadaViewState extends State<ListaGuardadaView> {
     // El controlador vive con esta pantalla
     return ChangeNotifierProvider(
       create: (_) => ListaGuardadaController(),
-      child: _Cuerpo(buscador: _buscador, esVistos: widget.esVistos),
+      child: _Cuerpo(
+        buscador: _buscador,
+        esVistos: widget.esVistos,
+        paginas: _paginas,
+        botones: _botones,
+      ),
     );
   }
 }
@@ -85,7 +97,14 @@ const _textosOrden = {
 class _Cuerpo extends StatelessWidget {
   final TextEditingController buscador;
   final bool esVistos;
-  const _Cuerpo({required this.buscador, required this.esVistos});
+  final PageController paginas;
+  final Map<String, GlobalKey> botones;
+  const _Cuerpo({
+    required this.buscador,
+    required this.esVistos,
+    required this.paginas,
+    required this.botones,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -106,7 +125,12 @@ class _Cuerpo extends StatelessWidget {
       }
     });
 
-    final elementos = control.filtrados;
+    // Tipos de esta lista (Personas solo en Favoritos: no se marcan como
+    // vistas); cada uno es una página
+    final tipos = [
+      for (final tipo in _tipos)
+        if (tipo.$1 != 'persona' || !esVistos) tipo,
+    ];
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -149,20 +173,29 @@ class _Cuerpo extends StatelessWidget {
                 // sin número si no hay ninguno. Personas solo en Favoritos
                 // (no se marcan como vistas).
                 segments: [
-                  for (final (valor, clave) in _tipos)
-                    if (valor != 'persona' || !esVistos)
-                      ButtonSegment(
-                        value: valor,
-                        label: Text(
-                          control.cuantos(valor) > 0
-                              ? '${t(clave, idioma)} (${control.cuantos(valor)})'
-                              : t(clave, idioma),
-                        ),
+                  for (final (valor, clave) in tipos)
+                    ButtonSegment(
+                      value: valor,
+                      label: Text(
+                        key: botones[valor],
+                        control.cuantos(valor) > 0
+                            ? '${t(clave, idioma)} (${control.cuantos(valor)})'
+                            : t(clave, idioma),
                       ),
+                    ),
                 ],
                 selected: {control.filtro},
+                // Al tocar un tipo se salta a su página (y esta cambia el filtro)
                 onSelectionChanged: (nuevo) {
-                  if (nuevo.isNotEmpty) control.cambiarFiltro(nuevo.first);
+                  if (nuevo.isEmpty) return;
+                  // Sin páginas (lista vacía) solo cambia el filtro
+                  if (!paginas.hasClients) {
+                    control.cambiarFiltro(nuevo.first);
+                    return;
+                  }
+                  paginas.jumpToPage(
+                    tipos.indexWhere((tipo) => tipo.$1 == nuevo.first),
+                  );
                 },
               ),
             ),
@@ -233,7 +266,8 @@ class _Cuerpo extends StatelessWidget {
             ),
           ];
 
-          // Lista o estado vacío
+          // Sin nada guardado: aviso; si no, una página por tipo que se
+          // pasa deslizando (en el móvil) y mueve el filtro de arriba
           final lista = !control.hayElementos
               ? EstadoVacio(
                   icono: esVistos
@@ -241,21 +275,30 @@ class _Cuerpo extends StatelessWidget {
                       : Icons.favorite_border,
                   texto: t(esVistos ? 'sinVistos' : 'sinFavoritos', idioma),
                 )
-              : elementos.isEmpty
-              // Sin personas guardadas: aviso propio; si no, sin coincidencias
-              ? control.filtro == 'persona'
-                    ? EstadoVacio(
-                        icono: Icons.person_outline,
-                        texto: t('sinPersonasFavoritas', idioma),
-                      )
-                    : EstadoVacio(
-                        icono: Icons.search_off,
-                        texto: t('sinCoincidencias', idioma),
-                      )
-              : RejillaTarjetas(
-                  tarjetas: elementos
-                      .map((f) => _tarjeta(context, f, app, idioma))
-                      .toList(),
+              : PageView(
+                  controller: paginas,
+                  onPageChanged: (i) {
+                    final antes = tipos.indexWhere(
+                      (tipo) => tipo.$1 == control.filtro,
+                    );
+                    control.cambiarFiltro(tipos[i].$1);
+                    // Que el botón del tipo nuevo se vea si la barra no
+                    // cabe, moviéndola lo justo hacia el lado al que se va
+                    final boton = botones[tipos[i].$1]?.currentContext;
+                    if (boton != null) {
+                      Scrollable.ensureVisible(
+                        boton,
+                        alignmentPolicy: i > antes
+                            ? ScrollPositionAlignmentPolicy.keepVisibleAtEnd
+                            : ScrollPositionAlignmentPolicy.keepVisibleAtStart,
+                        duration: const Duration(milliseconds: 250),
+                      );
+                    }
+                  },
+                  children: [
+                    for (final (valor, _) in tipos)
+                      _pagina(context, valor, app, control, idioma),
+                  ],
                 );
 
           if (medidas.maxHeight < 360) {
@@ -279,6 +322,34 @@ class _Cuerpo extends StatelessWidget {
         },
       ),
     );
+  }
+
+  /// Página de un tipo: sus tarjetas o, si no hay, el aviso que toque.
+  Widget _pagina(
+    BuildContext context,
+    String tipo,
+    AppController app,
+    ListaGuardadaController control,
+    String idioma,
+  ) {
+    final elementos = control.filtradosDe(tipo);
+    if (elementos.isNotEmpty) {
+      return RejillaTarjetas(
+        tarjetas: [
+          for (final f in elementos) _tarjeta(context, f, app, idioma),
+        ],
+      );
+    }
+    // Sin personas guardadas: aviso propio; si no, sin coincidencias
+    return tipo == 'persona'
+        ? EstadoVacio(
+            icono: Icons.person_outline,
+            texto: t('sinPersonasFavoritas', idioma),
+          )
+        : EstadoVacio(
+            icono: Icons.search_off,
+            texto: t('sinCoincidencias', idioma),
+          );
   }
 
   /// Tarjeta: al pulsar abre el detalle. En Favoritos el corazón lo quita

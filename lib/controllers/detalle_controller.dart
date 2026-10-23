@@ -30,6 +30,7 @@ class DetalleController extends ChangeNotifier {
   String _fuente; // fuente mostrada ahora mismo
   String? _imdbId; // puente IMDb (series)
   int? _idTmdb; // id de TMDB de la serie (para pedir episodios)
+  int? _idTvmaze; // id de TVMaze de la serie (para su enlace)
   bool _cargando = false;
   String? _aviso; // clave de traducción o null
 
@@ -61,6 +62,32 @@ class DetalleController extends ChangeNotifier {
   bool get tvmazeOk => _tvmazeOk;
   bool get cargandoEpisodios => _cargandoEpisodios;
   bool get esSerie => tipo == 'serie';
+
+  /// Enlaces a la ficha en las webs: TMDB y, en series, TVMaze. Si aún no
+  /// se sabe el id en una de ellas (no se ha cambiado de fuente), se abre
+  /// su buscador con el título.
+  List<({String nombre, String url})> get enlaces {
+    if (!esSerie) {
+      return [
+        (nombre: 'TMDB', url: 'https://www.themoviedb.org/movie/$idInicial'),
+      ];
+    }
+    final titulo = Uri.encodeQueryComponent(_serie?.titulo ?? '');
+    return [
+      (
+        nombre: 'TMDB',
+        url: _idTmdb == null
+            ? 'https://www.themoviedb.org/search/tv?query=$titulo'
+            : 'https://www.themoviedb.org/tv/$_idTmdb',
+      ),
+      (
+        nombre: 'TVMaze',
+        url: _idTvmaze == null
+            ? 'https://www.tvmaze.com/search?q=$titulo'
+            : 'https://www.tvmaze.com/shows/$_idTvmaze',
+      ),
+    ];
+  }
 
   // Recomendaciones de TMDB (solo se usa la lista del tipo de la ficha)
   List<SerieModel> _recomendacionesSeries = const [];
@@ -183,6 +210,7 @@ class DetalleController extends ChangeNotifier {
         }
         _serie = serie;
         _tvmazeOk = true;
+        _idTvmaze = serie.id;
         // TVMaze trae todos los episodios de golpe: se agrupan por temporada
         await _cargarTodosTvmaze(serie.id);
       }
@@ -243,6 +271,7 @@ class DetalleController extends ChangeNotifier {
           // sin embeds: se queda con la ficha básica del enlace
         }
         _serie = completa;
+        _idTvmaze = completa.id;
         _imdbId = completa.imdbId ?? _imdbId;
         await _cargarTodosTvmaze(completa.id);
       }

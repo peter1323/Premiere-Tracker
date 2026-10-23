@@ -6,11 +6,13 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
 /// Una tarjeta de la fila: [imagen] (URL o null), [titulo], [subtitulo]
-/// opcional y [onTap] (null = no se puede abrir).
+/// opcional, [nota] media 0-10 (null = sin estrella) y [onTap] (null = no
+/// se puede abrir).
 typedef ElementoFila = ({
   String? imagen,
   String titulo,
   String subtitulo,
+  double? nota,
   VoidCallback? onTap,
 });
 
@@ -111,15 +113,36 @@ class _FilaHorizontalState extends State<FilaHorizontal> {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              if (e.subtitulo.isNotEmpty) ...[
+              if (e.subtitulo.isNotEmpty || e.nota != null) ...[
                 const SizedBox(height: 2),
-                Text(
-                  e.subtitulo,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: tema.textTheme.bodySmall?.copyWith(
-                    color: esquema.outline,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        e.subtitulo,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: tema.textTheme.bodySmall?.copyWith(
+                          color: esquema.outline,
+                        ),
+                      ),
+                    ),
+                    // Nota media con estrella dorada para que destaque
+                    if (e.nota != null) ...[
+                      const Icon(
+                        Icons.star_rounded,
+                        size: 15,
+                        color: Color(0xFFFFC107),
+                      ),
+                      Text(
+                        e.nota!.toStringAsFixed(1),
+                        style: tema.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ],

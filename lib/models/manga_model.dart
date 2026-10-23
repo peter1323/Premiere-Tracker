@@ -15,6 +15,8 @@ class MangaModel {
   final String formato; // MANGA, NOVEL, ONE_SHOT...
   final String pais; // JP, KR, CN, TW...
   final List<String> generos;
+  final List<String>
+  etiquetas; // etiquetas de AniList sin destripes (Time Skip...)
   final List<String> autores; // guionistas y artistas (AniList staff)
   final String fechaInicio; // 'YYYY-MM-DD' o ''
   final String portada;
@@ -32,6 +34,7 @@ class MangaModel {
     this.formato = '',
     this.pais = '',
     this.generos = const [],
+    this.etiquetas = const [],
     this.autores = const [],
     this.fechaInicio = '',
     this.portada = '',
@@ -41,7 +44,8 @@ class MangaModel {
   /// Convierte la respuesta JSON del GraphQL de AniList en un manga.
   /// Quita etiquetas HTML de la sinopsis que a veces trae AniList.
   factory MangaModel.fromAniList(Map<String, dynamic> json) {
-    final titulo = json['title']?['romaji'] ??
+    final titulo =
+        json['title']?['romaji'] ??
         json['title']?['english'] ??
         json['title']?['native'] ??
         '';
@@ -67,9 +71,11 @@ class MangaModel {
       formato: json['format'] as String? ?? '',
       pais: json['countryOfOrigin'] as String? ?? '',
       generos: List<String>.from(json['genres'] as List? ?? []),
+      etiquetas: _etiquetas(json['tags'] as List?),
       autores: _autores(json['staff'] as Map<String, dynamic>?),
       fechaInicio: _fecha(json['startDate'] as Map<String, dynamic>?),
-      portada: json['coverImage']?['large'] ??
+      portada:
+          json['coverImage']?['large'] ??
           json['coverImage']?['extraLarge'] ??
           '',
       url: json['siteUrl'] as String? ?? '',
@@ -109,6 +115,16 @@ class MangaModel {
   }
 
   /// Monta la fecha de inicio 'YYYY-MM-DD' (devuelve '' si falta el año).
+  /// Etiquetas que AniList considera relevantes (rank >= 60) y que no
+  /// destripan la historia; como mucho 8 para no llenar la ficha.
+  static List<String> _etiquetas(List? tags) => [
+    for (final e in tags ?? const [])
+      if (e is Map &&
+          e['isMediaSpoiler'] != true &&
+          (e['rank'] as int? ?? 0) >= 60)
+        e['name'] as String,
+  ].take(8).toList();
+
   static String _fecha(Map<String, dynamic>? f) {
     final anio = f?['year'] as int?;
     if (anio == null) return '';
@@ -116,5 +132,27 @@ class MangaModel {
     final dia = (f?['day'] as int? ?? 1).toString().padLeft(2, '0');
     return '$anio-$mes-$dia';
   }
+}
 
+/// Separa de una sinopsis el crédito de origen para mostrarlo siempre igual
+/// debajo: AniList lo pone al final como "(Source: MANGA Plus)" y MangaDex
+/// como líneas que solo son un enlace (el servicio ya las deja con ese
+/// mismo formato). Devuelve el texto sin el crédito y sin saltos de línea
+/// de sobra, y los créditos juntos (null si no había).
+({String texto, String? credito}) separarCredito(String sinopsis) {
+  final creditos = <String>[];
+  final texto = sinopsis
+      .replaceAllMapped(
+        RegExp(
+          r'\(\s*source:\s*([^()]*(?:\([^()]*\)[^()]*)*)\)',
+          caseSensitive: false,
+        ),
+        (m) {
+          creditos.add(m[1]!.trim());
+          return '';
+        },
+      )
+      .replaceAll(RegExp(r'(\n[ \t]*){3,}'), '\n\n')
+      .trim();
+  return (texto: texto, credito: creditos.isEmpty ? null : creditos.join(', '));
 }

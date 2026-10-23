@@ -17,9 +17,9 @@ import '../services/anilist_service.dart';
 /// división se hace por formato y no por tipo.
 class MangasController extends ChangeNotifier {
   // Pestaña 1: cómics — manga, manhwa, manhua y one-shots.
-  static const List<String> _formatosComic = ['MANGA', 'ONE_SHOT'];
+  static const List<String> formatosComic = ['MANGA', 'ONE_SHOT'];
   // Pestaña 2: novelas ligeras.
-  static const List<String> _formatosNovela = ['NOVEL'];
+  static const List<String> formatosNovela = ['NOVEL'];
 
   // Resultados por pestaña.
   List<MangaModel> resultadosManga = [];
@@ -40,8 +40,8 @@ class MangasController extends ChangeNotifier {
     notifyListeners();
 
     final resultados = await Future.wait([
-      _buscarGrupo(consulta, _formatosComic),
-      _buscarGrupo(consulta, _formatosNovela),
+      _buscarGrupo(consulta, formatosComic),
+      _buscarGrupo(consulta, formatosNovela),
     ]);
     resultadosManga = resultados[0];
     resultadosNovela = resultados[1];

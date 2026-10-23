@@ -32,6 +32,7 @@ class AnilistService {
         format
         countryOfOrigin
         genres
+        tags { name rank isMediaSpoiler }
         staff(perPage: 6, sort: [RELEVANCE]) {
           edges {
             node { name { full } }
@@ -47,6 +48,19 @@ class AnilistService {
   query (\$search: String, \$format_in: [MediaFormat]) {
     Page(page: 1, perPage: 20) {
       media(type: MANGA, search: \$search, format_in: \$format_in, sort: SEARCH_MATCH) {
+$_campos
+      }
+    }
+  }
+  ''';
+
+  // Los más populares de un género o etiqueta (al tocarlo en la ficha);
+  // la variable que no se manda (null) AniList la ignora.
+  static final String _consultaGenero =
+      '''
+  query (\$genre: String, \$tag: String, \$format_in: [MediaFormat]) {
+    Page(page: 1, perPage: 30) {
+      media(type: MANGA, genre: \$genre, tag: \$tag, format_in: \$format_in, sort: POPULARITY_DESC) {
 $_campos
       }
     }
@@ -95,13 +109,36 @@ $_campos
     // La caché guarda por formato: el mismo título como cómic y como novela
     // son dos resultados distintos.
     final clave = '${formatos.join('_')}_${busqueda.toLowerCase()}';
-    final guardado = _cache[clave];
-    if (guardado != null) return guardado;
-
-    final datos = await _post(_consulta, {
+    return _pagina(clave, _consulta, {
       'search': busqueda,
       'format_in': formatos,
     });
+  }
+
+  /// Los mangas o novelas más populares del género [genero] (los géneros
+  /// de AniList van en inglés: Action, Romance...); con [etiqueta], de esa
+  /// etiqueta (Slice of Life, Time Skip...).
+  static Future<List<MangaModel>> porGenero(
+    String genero,
+    List<String> formatos, {
+    bool etiqueta = false,
+  }) => _pagina(
+    '${etiqueta ? 'etiqueta' : 'genero'}_${formatos.join('_')}_$genero',
+    _consultaGenero,
+    {etiqueta ? 'tag' : 'genre': genero, 'format_in': formatos},
+  );
+
+  /// Lanza una consulta de página de AniList y la guarda en caché con
+  /// [clave]. Lanza excepción si no hay conexión o la respuesta no vale.
+  static Future<List<MangaModel>> _pagina(
+    String clave,
+    String consulta,
+    Map<String, dynamic> variables,
+  ) async {
+    final guardado = _cache[clave];
+    if (guardado != null) return guardado;
+
+    final datos = await _post(consulta, variables);
     final lista = datos['data']?['Page']?['media'] as List?;
     if (lista == null) {
       // Si GraphQL devuelve errores (p. ej. consulta rechazada).

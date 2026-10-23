@@ -162,7 +162,19 @@ class MangadexService {
 
   /// Quita el markdown que trae MangaDex (negritas, cursivas y enlaces).
   static String _limpiarMarkdown(String texto) => texto
-      .replaceAll(RegExp(r'\[([^\]]+)\]\([^)]+\)'), r'$1')
+      // Una línea que solo es un enlace es el crédito de origen
+      // ("- [Twitter Oficial](url)"): se deja como el de AniList,
+      // "(Source: Twitter Oficial)", para que la ficha lo muestre aparte
+      .replaceAllMapped(
+        RegExp(
+          r'^[ \t]*[-•]?[ \t]*\[([^\]]+)\]\([^)]*\)[ \t]*$',
+          multiLine: true,
+        ),
+        (m) => '(Source: ${m[1]})',
+      )
+      // El resto de enlaces: [texto](enlace) -> texto (replaceAll no
+      // entiende "$1": así no se cuela un "$1" literal en la sinopsis)
+      .replaceAllMapped(RegExp(r'\[([^\]]+)\]\([^)]+\)'), (m) => m[1]!)
       .replaceAll('*', '')
       .replaceAll('_', '')
       .replaceAll('~', '')
@@ -181,8 +193,9 @@ class MangadexService {
       final atributos = item['attributes'] as Map<String, dynamic>?;
       final titulos = <String>[
         ...((atributos?['title'] as Map<String, dynamic>?)?.values ?? []),
-        ...((atributos?['altTitles'] as List?)
-                ?.expand((e) => (e as Map).values.cast<String>()) ??
+        ...((atributos?['altTitles'] as List?)?.expand(
+              (e) => (e as Map).values.cast<String>(),
+            ) ??
             []),
       ];
       for (final t in titulos) {

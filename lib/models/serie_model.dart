@@ -32,6 +32,7 @@ class SerieModel {
   final List<String> canales; // canales/redes donde se emite
   final List<RepartoModel> reparto;
   final DondeVer? dondeVer; // plataformas en España (solo TMDB)
+  final List<PalabraClave> palabrasClave; // solo TMDB
 
   const SerieModel({
     required this.id,
@@ -49,6 +50,7 @@ class SerieModel {
     this.canales = const [],
     this.reparto = const [],
     this.dondeVer,
+    this.palabrasClave = const [],
   });
 
   /// Año de estreno, o null si no hay fecha.
@@ -84,6 +86,7 @@ class SerieModel {
       canales: canales ?? this.canales,
       reparto: reparto ?? this.reparto,
       dondeVer: dondeVer,
+      palabrasClave: palabrasClave,
     );
   }
 
@@ -95,8 +98,8 @@ class SerieModel {
       titulo: (json['name'] as String?) ?? '',
       sinopsis: (json['overview'] as String?) ?? '',
       fechaEstreno: (json['first_air_date'] as String?) ?? '',
-      posterUrl:
-          TmdbRefs.urlImagen(json['poster_path'] as String?),
+      posterUrl: TmdbRefs.urlImagen(json['poster_path'] as String?),
+      puntuacion: TmdbRefs.notaMedia(json),
     );
   }
 
@@ -118,6 +121,7 @@ class SerieModel {
       canales: TmdbRefs.nombresDeLista(json['networks']),
       reparto: TmdbRefs.repartoDeCredits(json['credits']),
       dondeVer: TmdbRefs.dondeVerDe(json['watch/providers']),
+      palabrasClave: TmdbRefs.palabrasClaveDe(json['keywords']),
       temporadas: (json['seasons'] as List<dynamic>? ?? [])
           .map((s) => TemporadaModel.fromTmdb(s as Map<String, dynamic>))
           .toList(),
@@ -152,12 +156,12 @@ class SerieModel {
       sinopsis: _quitarHtml(m['summary'] as String?),
       estado: _normalizarEstadoTvmaze(m['status'] as String?),
       fechaEstreno: (m['premiered'] as String?) ?? '',
-      posterUrl: (m['image']?['medium'] as String?) ??
+      posterUrl:
+          (m['image']?['medium'] as String?) ??
           (m['image']?['original'] as String?),
-      puntuacion: (rating is Map<String, dynamic>
-              ? (rating['average'] as num?)
-              : null)
-          ?.toDouble(),
+      puntuacion:
+          (rating is Map<String, dynamic> ? (rating['average'] as num?) : null)
+              ?.toDouble(),
       generos: (m['genres'] as List<dynamic>? ?? const [])
           .whereType<String>()
           .toList(),
@@ -203,18 +207,21 @@ class SerieModel {
       if (nombre.isEmpty) continue;
       final imagen = person['image'];
       final personaje = e['character'];
-      reparto.add(RepartoModel(
-        nombre: nombre,
-        personaje: personaje is Map<String, dynamic>
-            ? (personaje['name'] as String? ?? '')
-            : '',
-        fotoUrl: imagen is Map<String, dynamic>
-            ? ((imagen['original'] as String?) ?? (imagen['medium'] as String?))
-            : null,
-        // id de la persona en TVMaze (para abrir su ficha al pinchar)
-        idPersona: person['id'] as int?,
-        fuente: 'tvmaze',
-      ));
+      reparto.add(
+        RepartoModel(
+          nombre: nombre,
+          personaje: personaje is Map<String, dynamic>
+              ? (personaje['name'] as String? ?? '')
+              : '',
+          fotoUrl: imagen is Map<String, dynamic>
+              ? ((imagen['original'] as String?) ??
+                    (imagen['medium'] as String?))
+              : null,
+          // id de la persona en TVMaze (para abrir su ficha al pinchar)
+          idPersona: person['id'] as int?,
+          fuente: 'tvmaze',
+        ),
+      );
     }
     return reparto;
   }
@@ -287,6 +294,10 @@ typedef DondeVer = ({
   List<({String nombre, String? logo})> plataformas,
 });
 
+/// Palabra clave de TMDB (romance, slice of life...): su [id] sirve para
+/// buscar más títulos con ella.
+typedef PalabraClave = ({int id, String nombre});
+
 /// Utilidades compartidas de TMDB para los modelos: URLs de imágenes
 /// y lecturas de la respuesta de detalle (géneros, redes, reparto).
 class TmdbRefs {
@@ -297,6 +308,12 @@ class TmdbRefs {
   static String? urlImagen(String? ruta, {String tamano = 'w500'}) {
     if (ruta == null || ruta.isEmpty) return null;
     return '$_baseImagenes$tamano$ruta';
+  }
+
+  /// Nota media de TMDB (0-10); null si nadie ha votado aún (0).
+  static double? notaMedia(Map<String, dynamic> json) {
+    final nota = (json['vote_average'] as num?)?.toDouble();
+    return nota == null || nota == 0 ? null : nota;
   }
 
   /// Extrae el campo "name" de cada objeto de una lista de la respuesta
@@ -340,6 +357,19 @@ class TmdbRefs {
   /// Plataformas de streaming en [region] ("watch/providers", anexado al
   /// detalle): de suscripción, gratis o con anuncios, sin repetir.
   /// null si no hay ninguna (no se muestra la sección).
+  /// Palabras clave anexadas al detalle ("keywords"): las series las traen
+  /// en "results" y las películas en "keywords".
+  static List<PalabraClave> palabrasClaveDe(dynamic json) {
+    if (json is! Map<String, dynamic>) return const [];
+    final lista = json['results'] ?? json['keywords'];
+    if (lista is! List) return const [];
+    return [
+      for (final k in lista)
+        if (k is Map<String, dynamic> && k['id'] is int)
+          (id: k['id'] as int, nombre: (k['name'] as String?) ?? ''),
+    ];
+  }
+
   static DondeVer? dondeVerDe(dynamic json) {
     final resultados = json is Map<String, dynamic> ? json['results'] : null;
     final es = resultados is Map<String, dynamic> ? resultados[region] : null;
@@ -348,7 +378,8 @@ class TmdbRefs {
     final plataformas = [
       for (final tipo in ['flatrate', 'free', 'ads'])
         for (final p in es[tipo] as List? ?? const [])
-          if (p is Map<String, dynamic> && ids.add(p['provider_id'] as int? ?? 0))
+          if (p is Map<String, dynamic> &&
+              ids.add(p['provider_id'] as int? ?? 0))
             (
               nombre: p['provider_name'] as String? ?? '',
               logo: urlImagen(p['logo_path'] as String?, tamano: 'w92'),
@@ -361,8 +392,10 @@ class TmdbRefs {
   /// Reparto de TMDB: "credits" (append_to_response=credits, solo los
   /// habituales) o, con [agregado], /tv/{id}/aggregate_credits (todos los
   /// actores de todas las temporadas, invitados incluidos).
-  static List<RepartoModel> repartoDeCredits(dynamic credits,
-      {bool agregado = false}) {
+  static List<RepartoModel> repartoDeCredits(
+    dynamic credits, {
+    bool agregado = false,
+  }) {
     if (credits is! Map<String, dynamic>) return const [];
     final cast = credits['cast'];
     if (cast is! List) return const [];
@@ -371,16 +404,18 @@ class TmdbRefs {
       if (e is! Map<String, dynamic>) continue;
       final nombre = (e['name'] as String?) ?? '';
       if (nombre.isEmpty) continue;
-      reparto.add(RepartoModel(
-        nombre: nombre,
-        personaje: agregado
-            ? _personajesAgregados(e)
-            : (e['character'] as String?) ?? '',
-        fotoUrl: urlImagen(e['profile_path'] as String?, tamano: 'w185'),
-        // id de la persona en TMDB (para abrir su ficha al pinchar)
-        idPersona: e['id'] as int?,
-        fuente: 'tmdb',
-      ));
+      reparto.add(
+        RepartoModel(
+          nombre: nombre,
+          personaje: agregado
+              ? _personajesAgregados(e)
+              : (e['character'] as String?) ?? '',
+          fotoUrl: urlImagen(e['profile_path'] as String?, tamano: 'w185'),
+          // id de la persona en TMDB (para abrir su ficha al pinchar)
+          idPersona: e['id'] as int?,
+          fuente: 'tmdb',
+        ),
+      );
     }
     return reparto;
   }
@@ -397,7 +432,8 @@ class TmdbRefs {
     if (roles is List) {
       final nombres = <String>{
         for (final r in roles)
-          if (r is Map<String, dynamic> && (r['character'] as String?)?.isNotEmpty == true)
+          if (r is Map<String, dynamic> &&
+              (r['character'] as String?)?.isNotEmpty == true)
             r['character'] as String,
       };
       if (nombres.isNotEmpty) return nombres.join(' / ');

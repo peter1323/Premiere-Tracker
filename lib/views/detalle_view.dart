@@ -21,7 +21,9 @@ import '../models/persona_model.dart';
 import '../models/serie_model.dart';
 import '../services/enlace_service.dart';
 import 'manga_detalle_view.dart';
+import 'genero_view.dart';
 import 'persona_view.dart';
+import 'widgets/fila_botones.dart';
 import 'widgets/fila_horizontal.dart';
 import 'widgets/insignias.dart';
 import 'widgets/selector_fuente.dart';
@@ -201,6 +203,10 @@ class _CuerpoDetalle extends StatelessWidget {
     // Datos que pueden venir de TMDB o de TVMaze
     final generos =
         control.serie?.generos ?? control.pelicula?.generos ?? const [];
+    final palabrasClave =
+        control.serie?.palabrasClave ??
+        control.pelicula?.palabrasClave ??
+        const [];
     final reparto =
         control.serie?.reparto ?? control.pelicula?.reparto ?? const [];
     final canales = control.serie?.canales ?? const [];
@@ -238,20 +244,32 @@ class _CuerpoDetalle extends StatelessWidget {
                         style: tema.textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 24),
-                      // Géneros: Acción, Aventura, Drama...
+                      // Géneros (Acción, Drama...) y palabras clave de TMDB
+                      // (romance, slice of life...): cada una abre sus
+                      // títulos populares
                       if (generos.isNotEmpty) ...[
                         Text(
                           t('generos', idioma),
                           style: tema.textTheme.titleMedium,
                         ),
                         const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            for (final g in generos)
-                              Chip(label: Text(traducirGenero(g, idioma))),
-                          ],
+                        GeneroView.chips(
+                          context,
+                          generos: generos,
+                          tipo: esSerie ? 'serie' : 'pelicula',
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                      if (palabrasClave.isNotEmpty) ...[
+                        Text(
+                          t('palabrasClave', idioma),
+                          style: tema.textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        GeneroView.chips(
+                          context,
+                          palabrasClave: palabrasClave,
+                          tipo: esSerie ? 'serie' : 'pelicula',
                         ),
                         const SizedBox(height: 24),
                       ],
@@ -325,6 +343,7 @@ class _CuerpoDetalle extends StatelessWidget {
                                 imagen: m.fotoUrl,
                                 titulo: m.nombre,
                                 subtitulo: m.personaje,
+                                nota: null,
                                 onTap: m.idPersona == null || m.fuente == null
                                     ? null
                                     : () => PersonaView.abrir(
@@ -361,6 +380,22 @@ class _CuerpoDetalle extends StatelessWidget {
                       // Al final: "si te gustó esto..." (solo si TMDB
                       // devuelve algo; al tocar uno se abre su ficha)
                       ..._recomendaciones(context, control, idioma),
+                      // Abajo del todo: enlaces a la ficha en TMDB y TVMaze
+                      const SizedBox(height: 24),
+                      FilaBotones(
+                        botones: [
+                          for (final (i, e) in control.enlaces.indexed)
+                            (i == 0
+                                ? FilledButton.icon
+                                : FilledButton.tonalIcon)(
+                              onPressed: () => EnlaceService.abrir(e.url),
+                              icon: const Icon(Icons.open_in_new_rounded),
+                              label: Text(
+                                tv('verEnWeb', idioma, {'web': e.nombre}),
+                              ),
+                            ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -382,6 +417,7 @@ class _CuerpoDetalle extends StatelessWidget {
           imagen: s.posterUrl,
           titulo: s.titulo,
           subtitulo: s.anio?.toString() ?? '',
+          nota: s.puntuacion,
           onTap: () => DetalleView.abrirSerie(context, s, language),
         ),
       for (final p in control.recomendacionesPeliculas)
@@ -389,6 +425,7 @@ class _CuerpoDetalle extends StatelessWidget {
           imagen: p.posterUrl,
           titulo: p.titulo,
           subtitulo: p.anio?.toString() ?? '',
+          nota: p.puntuacion,
           onTap: () => DetalleView.abrirPelicula(context, p, language),
         ),
     ];
@@ -527,12 +564,9 @@ class _CuerpoDetalle extends StatelessWidget {
           _proximoEpisodio(control.serie!.proximoEpisodio!, idioma),
           const SizedBox(height: 12),
         ],
-        // Añadir/quitar de favoritos y de vistos (Wrap: en pantallas
-        // estrechas los dos botones pasan a dos líneas en vez de cortarse)
-        Wrap(
-          spacing: 12,
-          runSpacing: 8,
-          children: [
+        // Añadir/quitar de favoritos y de vistos, uno al lado del otro
+        FilaBotones(
+          botones: [
             FilledButton.icon(
               onPressed: () => _alternarFavorito(control, app),
               icon: Icon(esFav ? Icons.favorite : Icons.favorite_border),
