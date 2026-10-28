@@ -191,12 +191,18 @@ class AppController extends ChangeNotifier {
     return nuevaLista;
   }
 
+  /// Título original para guardar: null si la fuente no lo da (TVMaze;
+  /// completarDatos lo busca en TMDB) y '' si es igual que el título.
+  static String? _original(String original, String titulo) =>
+      original.isEmpty ? null : TmdbRefs.originalDistinto(original, titulo);
+
   static FavoritoModel _deSerie(SerieModel serie) => FavoritoModel(
     tipo: 'serie',
     fuente: serie.fuente,
     id: serie.id,
     imdbId: serie.imdbId,
     titulo: serie.titulo,
+    tituloOriginal: _original(serie.tituloOriginal, serie.titulo),
     anio: serie.anio,
     posterUrl: serie.posterUrl,
     fechaEstreno: serie.fechaEstreno,
@@ -208,6 +214,7 @@ class AppController extends ChangeNotifier {
     fuente: 'tmdb',
     id: pelicula.id,
     titulo: pelicula.titulo,
+    tituloOriginal: _original(pelicula.tituloOriginal, pelicula.titulo),
     anio: pelicula.anio,
     posterUrl: pelicula.posterUrl,
     fechaEstreno: pelicula.fechaEstreno,
@@ -352,13 +359,16 @@ class AppController extends ChangeNotifier {
   /// Completa en segundo plano, una vez por sesión: el estado de lo
   /// guardado sin estado (lo añadido desde la búsqueda no lo trae) y la
   /// fecha de estreno de las películas (antes se guardaba la del primer
-  /// país del mundo, no la de España). Se guarda una sola vez al final.
+  /// país del mundo, no la de España) y el título original de lo que no lo
+  /// tenga (para el Calendario). Se guarda una sola vez al final.
   // shortcut: el estado de series y mangas ya apuntado solo se refresca al
   // abrir la ficha; si hiciera falta al día sin abrirla, consultarlo aquí.
   Future<void> completarDatos() async {
     final porConsultar = [
       for (final f in [...favoritos, ...vistos])
-        if ((f.estado == null && f.tipo != 'persona' || f.tipo == 'pelicula') &&
+        if ((f.estado == null && f.tipo != 'persona' ||
+                f.tipo == 'pelicula' ||
+                f.tituloOriginal == null && _tituloEnTmdb(f)) &&
             _consultadas.add(f.idUnico))
           f,
     ];
@@ -376,15 +386,21 @@ class AppController extends ChangeNotifier {
               estado: d.estado ?? f.estado,
               puntuacion: f.puntuacion,
               fechaEstreno: d.fecha,
+              tituloOriginal: d.original,
             );
     });
   }
 
-  /// Estado (de la app) y fecha de estreno de una obra guardada según su
-  /// base de datos; null si no hay conexión. La fecha solo en películas.
-  static Future<({String? estado, String? fecha})?> _consultarDatos(
-    FavoritoModel f,
-  ) async {
+  /// ¿Se puede pedir a TMDB el título original de [f]? (series y películas
+  /// de TMDB; TVMaze no lo da)
+  static bool _tituloEnTmdb(FavoritoModel f) =>
+      f.fuente == 'tmdb' && (f.tipo == 'serie' || f.tipo == 'pelicula');
+
+  /// Estado (de la app), fecha de estreno y título original de una obra
+  /// guardada según su base de datos; null si no hay conexión. La fecha solo
+  /// en películas y el título original solo en lo que viene de TMDB.
+  static Future<({String? estado, String? fecha, String? original})?>
+  _consultarDatos(FavoritoModel f) async {
     try {
       if (f.tipo == 'pelicula') {
         final p = await TmdbService.obtenerPelicula(
@@ -395,20 +411,29 @@ class AppController extends ChangeNotifier {
         return (
           estado: FavoritoModel.estadoDeApi(p.estado),
           fecha: p.fechaEstreno,
+          original: TmdbRefs.originalDistinto(p.tituloOriginal, f.titulo),
         );
       }
-      final estadoApi = switch (f.fuente) {
-        'tmdb' => (await TmdbService.obtenerSerie(
+      if (_tituloEnTmdb(f)) {
+        final s = await TmdbService.obtenerSerie(
           f.id,
           'es-ES',
           conReparto: false,
-        )).estado,
+        );
+        return (
+          estado: FavoritoModel.estadoDeApi(s.estado),
+          fecha: null,
+          original: TmdbRefs.originalDistinto(s.tituloOriginal, f.titulo),
+        );
+      }
+      final estadoApi = switch (f.fuente) {
         'tvmaze' => (await TvmazeService.obtenerSerie(f.id))?.estado,
         _ => (await AnilistService.cargarManga(f.id)).estado,
       };
       return (
         estado: estadoApi == null ? null : FavoritoModel.estadoDeApi(estadoApi),
         fecha: null,
+        original: null,
       );
     } catch (_) {
       return null;
@@ -428,7 +453,8 @@ class AppController extends ChangeNotifier {
       cambiado |=
           nuevo.estado != f.estado ||
           nuevo.puntuacion != f.puntuacion ||
-          nuevo.fechaEstreno != f.fechaEstreno;
+          nuevo.fechaEstreno != f.fechaEstreno ||
+          nuevo.tituloOriginal != f.tituloOriginal;
       return nuevo;
     }).toList();
     final favoritos = aplicar(usuario.favoritos);

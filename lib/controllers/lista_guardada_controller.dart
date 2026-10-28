@@ -1,4 +1,4 @@
-// CONTROLADOR de las pantallas Favoritos (sección 3) y Vistos (sección 4).
+// CONTROLADOR de las pantallas Favoritos (sección 4) y Vistos (sección 5).
 // Guarda la lista del usuario actual, el texto del buscador y el filtro
 // activo (Todo / Series / Películas / Manga / Novelas / Personas), el
 // filtro de estado y el orden (añadido o por tu nota; en Personas,

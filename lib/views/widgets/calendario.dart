@@ -27,6 +27,14 @@ class CalendarioFavoritos extends StatefulWidget {
   final ValueChanged<String> onModo;
   final ValueChanged<String> onPestana;
   final ValueChanged<EntradaCalendario> onAbrirEntrada;
+  // Para reutilizarlo en Estrenos: vistas que se ofrecen, título, botón
+  // extra junto a "Hoy" (Filtros), texto si no hay nada y Día siempre
+  // como lista (sin rejilla de horas, también en escritorio)
+  final List<String> modos;
+  final String claveTitulo;
+  final Widget? accion;
+  final String claveVacio;
+  final bool siempreLista;
 
   const CalendarioFavoritos({
     super.key,
@@ -43,6 +51,11 @@ class CalendarioFavoritos extends StatefulWidget {
     required this.onModo,
     required this.onPestana,
     required this.onAbrirEntrada,
+    this.modos = const ['dia', 'semana', 'mes', 'anio'],
+    this.claveTitulo = 'calendario',
+    this.accion,
+    this.claveVacio = 'noHayEstrenos',
+    this.siempreLista = false,
   });
 
   @override
@@ -127,27 +140,20 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
       LayoutBuilder(
         builder: (context, medidasCaja) {
           final estrecho = medidasCaja.maxWidth < 600;
+          // Icono y texto de cada vista; solo se muestran las de [modos]
+          const iconos = {
+            'dia': Icons.view_day_outlined,
+            'semana': Icons.view_week_outlined,
+            'mes': Icons.calendar_month_outlined,
+            'anio': Icons.grid_view_outlined,
+          };
           final segmentos = <ButtonSegment<String>>[
-            ButtonSegment(
-              value: 'dia',
-              icon: const Icon(Icons.view_day_outlined),
-              label: estrecho ? null : Text(t('dia', widget.idioma)),
-            ),
-            ButtonSegment(
-              value: 'semana',
-              icon: const Icon(Icons.view_week_outlined),
-              label: estrecho ? null : Text(t('semana', widget.idioma)),
-            ),
-            ButtonSegment(
-              value: 'mes',
-              icon: const Icon(Icons.calendar_month_outlined),
-              label: estrecho ? null : Text(t('mes', widget.idioma)),
-            ),
-            ButtonSegment(
-              value: 'anio',
-              icon: const Icon(Icons.grid_view_outlined),
-              label: estrecho ? null : Text(t('anio', widget.idioma)),
-            ),
+            for (final modo in widget.modos)
+              ButtonSegment(
+                value: modo,
+                icon: Icon(iconos[modo]),
+                label: estrecho ? null : Text(t(modo, widget.idioma)),
+              ),
           ];
           final selector = SegmentedButton<String>(
             segments: segmentos,
@@ -162,7 +168,7 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
             label: Text(t('hoy', widget.idioma)),
           );
           final titulo = Text(
-            t('calendario', widget.idioma),
+            t(widget.claveTitulo, widget.idioma),
             style: tema.textTheme.titleMedium,
           );
           if (!estrecho) {
@@ -172,6 +178,10 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
                 const Spacer(),
                 selector,
                 const SizedBox(width: 8),
+                if (widget.accion != null) ...[
+                  widget.accion!,
+                  const SizedBox(width: 8),
+                ],
                 hoy,
               ],
             );
@@ -179,7 +189,17 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(children: [titulo, const Spacer(), hoy]),
+              Row(
+                children: [
+                  titulo,
+                  const Spacer(),
+                  if (widget.accion != null) ...[
+                    widget.accion!,
+                    const SizedBox(width: 8),
+                  ],
+                  hoy,
+                ],
+              ),
               const SizedBox(height: 8),
               selector,
             ],
@@ -264,7 +284,7 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
                       ),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Text(t('noHayEstrenos', widget.idioma)),
+                    child: Text(t(widget.claveVacio, widget.idioma)),
                   ),
                 ),
               ),
@@ -476,6 +496,7 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
   /// quedaba vacía y las películas apretadas arriba).
   bool get _sinRejillaDeHoras =>
       (defaultTargetPlatform == TargetPlatform.android ||
+          widget.siempreLista ||
           widget.pestana == 'peliculas') &&
       (widget.modo == 'dia' || widget.modo == 'semana');
 

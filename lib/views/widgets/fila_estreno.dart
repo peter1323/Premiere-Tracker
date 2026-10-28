@@ -13,7 +13,8 @@ Color colorTextoSobre(Color fondo) =>
     : Colors.black87;
 
 /// Tarjeta de color con [prefijo] en negrita a la izquierda (la hora, o el
-/// día y la hora) y "T1E3 · Título" a continuación.
+/// día y la hora) y "T1E3 · Título" a continuación (con el título original
+/// debajo si lo hay).
 class FilaEstreno extends StatelessWidget {
   final EntradaCalendario entrada;
   final Color color;
@@ -54,11 +55,27 @@ class FilaEstreno extends StatelessWidget {
                   const SizedBox(width: 12),
                 ],
                 Expanded(
-                  child: Text(
-                    entrada.texto,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: colorTexto),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entrada.texto,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: colorTexto),
+                      ),
+                      // Título original debajo, más pequeño (Estrenos)
+                      if (entrada.tituloOriginal.isNotEmpty)
+                        Text(
+                          entrada.tituloOriginal,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: colorTexto.withValues(alpha: 0.8),
+                            fontSize: 12,
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ],

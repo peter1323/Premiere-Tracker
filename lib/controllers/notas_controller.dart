@@ -1,4 +1,4 @@
-// CONTROLADOR de la pantalla Notas (sección 5 del menú).
+// CONTROLADOR de la pantalla Notas (sección 6 del menú).
 // Guarda la lista de notas del usuario actual y el texto del buscador.
 // Las notas no se guardan aquí: las recibe de AppController con
 // syncNotas(). Vive en el IndexedStack, no se destruye al cambiar de

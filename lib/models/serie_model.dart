@@ -21,6 +21,7 @@ class SerieModel {
   final String fuente; // 'tmdb' o 'tvmaze'
   final String? imdbId;
   final String titulo;
+  final String tituloOriginal; // en su idioma original ('' si no se sabe)
   final String sinopsis;
   final String estado; // uno de los estados normalizados de arriba
   final String fechaEstreno; // 'yyyy-MM-dd' o ''
@@ -39,6 +40,7 @@ class SerieModel {
     required this.fuente,
     this.imdbId,
     required this.titulo,
+    this.tituloOriginal = '',
     this.sinopsis = '',
     this.estado = estadoDesconocida,
     this.fechaEstreno = '',
@@ -75,6 +77,7 @@ class SerieModel {
       fuente: fuente,
       imdbId: imdbId ?? this.imdbId,
       titulo: titulo,
+      tituloOriginal: tituloOriginal,
       sinopsis: sinopsis ?? this.sinopsis,
       estado: estado ?? this.estado,
       fechaEstreno: fechaEstreno,
@@ -96,6 +99,7 @@ class SerieModel {
       id: json['id'] as int? ?? 0,
       fuente: 'tmdb',
       titulo: (json['name'] as String?) ?? '',
+      tituloOriginal: (json['original_name'] as String?) ?? '',
       sinopsis: (json['overview'] as String?) ?? '',
       fechaEstreno: (json['first_air_date'] as String?) ?? '',
       posterUrl: TmdbRefs.urlImagen(json['poster_path'] as String?),
@@ -112,6 +116,7 @@ class SerieModel {
       id: json['id'] as int? ?? 0,
       fuente: 'tmdb',
       titulo: (json['name'] as String?) ?? '',
+      tituloOriginal: (json['original_name'] as String?) ?? '',
       sinopsis: (json['overview'] as String?) ?? '',
       estado: _normalizarEstadoTmdb(json['status'] as String?),
       fechaEstreno: (json['first_air_date'] as String?) ?? '',
@@ -294,6 +299,9 @@ typedef DondeVer = ({
   List<({String nombre, String? logo})> plataformas,
 });
 
+/// Una fecha de estreno de una película: país, tipo de estreno y día.
+typedef FechaEstreno = ({String pais, int tipo, String fecha});
+
 /// Palabra clave de TMDB (romance, slice of life...): su [id] sirve para
 /// buscar más títulos con ella.
 typedef PalabraClave = ({int id, String nombre});
@@ -329,9 +337,33 @@ class TmdbRefs {
     return nombres;
   }
 
+  /// Título original para mostrar debajo del título: '' si es el mismo.
+  static String originalDistinto(String original, String titulo) =>
+      original == titulo ? '' : original;
+
   /// País de las fechas de estreno y de "dónde verlo".
   // shortcut: región fija España; cambiar si hay usuarios de otros países.
   static const String region = 'ES';
+
+  /// Todas las fechas de estreno de una película ("release_dates" de TMDB):
+  /// país, tipo (1 festival, 2 cines limitado, 3 cines, 4 digital, 5
+  /// físico, 6 TV) y día 'yyyy-MM-dd'.
+  static List<FechaEstreno> fechasDeEstreno(dynamic json) {
+    final paises = json is Map ? json['results'] : null;
+    if (paises is! List) return const [];
+    return [
+      for (final p in paises)
+        if (p is Map<String, dynamic>)
+          for (final e in p['release_dates'] as List? ?? const [])
+            if (e is Map<String, dynamic> &&
+                (e['release_date'] as String? ?? '').length >= 10)
+              (
+                pais: p['iso_3166_1'] as String? ?? '',
+                tipo: e['type'] as int? ?? 0,
+                fecha: (e['release_date'] as String).substring(0, 10),
+              ),
+    ];
+  }
 
   /// Fecha de estreno de una película en [region] ('yyyy-MM-dd'): el
   /// primer estreno de allí en "release_dates" (anexado al detalle), sin
@@ -340,23 +372,13 @@ class TmdbRefs {
   /// 23/10 de España).
   static String fechaEstrenoEnRegion(Map<String, dynamic> json) {
     final principal = (json['release_date'] as String?) ?? '';
-    final paises = json['release_dates']?['results'];
-    if (paises is! List) return principal;
     final fechas = [
-      for (final p in paises)
-        if (p is Map<String, dynamic> && p['iso_3166_1'] == region)
-          for (final e in p['release_dates'] as List? ?? const [])
-            if (e is Map<String, dynamic> &&
-                e['type'] != 1 && // 1 = estreno en festival
-                (e['release_date'] as String? ?? '').length >= 10)
-              (e['release_date'] as String).substring(0, 10),
+      for (final e in fechasDeEstreno(json['release_dates']))
+        if (e.pais == region && e.tipo != 1) e.fecha, // 1 = festival
     ]..sort();
     return fechas.isEmpty ? principal : fechas.first;
   }
 
-  /// Plataformas de streaming en [region] ("watch/providers", anexado al
-  /// detalle): de suscripción, gratis o con anuncios, sin repetir.
-  /// null si no hay ninguna (no se muestra la sección).
   /// Palabras clave anexadas al detalle ("keywords"): las series las traen
   /// en "results" y las películas en "keywords".
   static List<PalabraClave> palabrasClaveDe(dynamic json) {
@@ -370,6 +392,9 @@ class TmdbRefs {
     ];
   }
 
+  /// Plataformas de streaming en [region] ("watch/providers", anexado al
+  /// detalle): de suscripción, gratis o con anuncios, sin repetir.
+  /// null si no hay ninguna (no se muestra la sección).
   static DondeVer? dondeVerDe(dynamic json) {
     final resultados = json is Map<String, dynamic> ? json['results'] : null;
     final es = resultados is Map<String, dynamic> ? resultados[region] : null;

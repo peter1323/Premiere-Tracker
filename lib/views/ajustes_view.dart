@@ -1,4 +1,4 @@
-// VISTA de la pantalla Ajustes (sección 6 del menú).
+// VISTA de la pantalla Ajustes (sección 7 del menú).
 // Permite cambiar idioma, tema y notificaciones de estreno, hacer copia
 // de seguridad (exportar/importar JSON) y gestionar usuarios (cambiar
 // nombre o PIN). Solo dibuja

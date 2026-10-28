@@ -15,6 +15,7 @@ class PeliculaModel {
   final int id;
   final String fuente; // siempre 'tmdb'
   final String titulo;
+  final String tituloOriginal; // en su idioma original ('' si no se sabe)
   final String sinopsis;
   final String fechaEstreno; // en España ('yyyy-MM-dd'), o la mundial
   // Fecha principal de TMDB: la del primer país del mundo (puede ser
@@ -32,6 +33,7 @@ class PeliculaModel {
     required this.id,
     this.fuente = 'tmdb',
     required this.titulo,
+    this.tituloOriginal = '',
     this.sinopsis = '',
     this.fechaEstreno = '',
     this.fechaEstrenoMundial = '',
@@ -54,6 +56,7 @@ class PeliculaModel {
     return PeliculaModel(
       id: json['id'] as int? ?? 0,
       titulo: (json['title'] as String?) ?? '',
+      tituloOriginal: (json['original_title'] as String?) ?? '',
       sinopsis: (json['overview'] as String?) ?? '',
       fechaEstreno: (json['release_date'] as String?) ?? '',
       posterUrl: TmdbRefs.urlImagen(json['poster_path'] as String?),
@@ -67,6 +70,7 @@ class PeliculaModel {
     return PeliculaModel(
       id: json['id'] as int? ?? 0,
       titulo: (json['title'] as String?) ?? '',
+      tituloOriginal: (json['original_title'] as String?) ?? '',
       sinopsis: (json['overview'] as String?) ?? '',
       fechaEstreno: TmdbRefs.fechaEstrenoEnRegion(json),
       fechaEstrenoMundial: (json['release_date'] as String?) ?? '',

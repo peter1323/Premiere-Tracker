@@ -1,4 +1,4 @@
-// VISTA de las pantallas Favoritos (sección 3) y Vistos (sección 4): son
+// VISTA de las pantallas Favoritos (sección 4) y Vistos (sección 5): son
 // la misma pantalla con distinta lista. Muestra la lista del usuario con
 // un buscador por nombre, un filtro por tipo (Todo / Series / Películas /
 // Manga / Novelas y, en Favoritos, Personas), un filtro por estado y el

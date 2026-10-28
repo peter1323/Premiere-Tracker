@@ -1,4 +1,4 @@
-// CONTROLADOR de la pantalla Calendario (sección 2 del menú).
+// CONTROLADOR de la pantalla Calendario (sección 3 del menú).
 // Calcula los próximos estrenos de las series y películas favoritas con
 // vistas de día, semana y mes. SOLO trabaja con series y películas (los
 // mangas no se meten aquí). Pide los datos a TmdbService y TvmazeService
@@ -87,24 +87,8 @@ class CalendarioController extends ChangeNotifier {
   }
 
   /// Normaliza la fecha según el modo (lunes de la semana, día 1 del mes...).
-  DateTime _normalizar(DateTime fecha) {
-    switch (_modoCalendario) {
-      case 'dia':
-      case 'proximos':
-        return DateTime(fecha.year, fecha.month, fecha.day);
-      case 'mes':
-        return DateTime(fecha.year, fecha.month, 1);
-      case 'anio':
-        return DateTime(fecha.year, 1, 1);
-      case 'semana':
-      default:
-        return DateTime(
-          fecha.year,
-          fecha.month,
-          fecha.day - (fecha.weekday - 1),
-        );
-    }
-  }
+  DateTime _normalizar(DateTime fecha) =>
+      inicioDePeriodo(_modoCalendario, fecha);
 
   /// Guarda los favoritos y recarga el calendario solo si algo cambió.
   Future<void> syncFavoritos(
@@ -115,9 +99,10 @@ class CalendarioController extends ChangeNotifier {
     favoritos = favoritos
         .where((f) => f.tipo == 'serie' || f.tipo == 'pelicula')
         .toList();
-    // Con la fecha: si se corrige la de una película, el calendario recarga
+    // Con la fecha y el título original: si se completan, el calendario
+    // recarga
     final firma =
-        '${favoritos.map((f) => '${f.idUnico}:${f.fechaEstreno}').join('|')}'
+        '${favoritos.map((f) => '${f.idUnico}:${f.fechaEstreno}:${f.tituloOriginal}').join('|')}'
         '#$language';
     if (firma == _firmaFavoritos) return;
     _firmaFavoritos = firma;
@@ -274,6 +259,7 @@ class CalendarioController extends ChangeNotifier {
             id: fav.id,
             imdbId: fav.imdbId,
             titulo: fav.titulo,
+            tituloOriginal: fav.tituloOriginal ?? '',
             etiqueta: e.etiqueta,
             hora: e.horaEmision,
             posterUrl: fav.posterUrl,
@@ -333,6 +319,7 @@ class CalendarioController extends ChangeNotifier {
       fuente: fav.fuente,
       id: fav.id,
       titulo: fav.titulo,
+      tituloOriginal: fav.tituloOriginal ?? '',
       etiqueta: '',
       hora: '',
       posterUrl: fav.posterUrl,
@@ -348,6 +335,8 @@ class EntradaCalendario {
   final int id;
   final String? imdbId;
   final String titulo;
+  // Título en su idioma original si es distinto ('' si no o no se sabe)
+  final String tituloOriginal;
   final String etiqueta; // "T2E5" en series, vacío en películas
   final String hora; // "HH:mm" o vacío
   final String? posterUrl;
@@ -359,16 +348,45 @@ class EntradaCalendario {
     required this.id,
     this.imdbId,
     required this.titulo,
+    this.tituloOriginal = '',
     this.etiqueta = '',
     this.hora = '',
     this.posterUrl,
     required this.claveDia,
   });
 
+  /// Copia con otra [etiqueta] (Estrenos la rellena después de cargar).
+  EntradaCalendario conEtiqueta(String etiqueta) => EntradaCalendario(
+    tipo: tipo,
+    fuente: fuente,
+    id: id,
+    imdbId: imdbId,
+    titulo: titulo,
+    tituloOriginal: tituloOriginal,
+    etiqueta: etiqueta,
+    hora: hora,
+    posterUrl: posterUrl,
+    claveDia: claveDia,
+  );
+
   /// Texto para mostrar: "T1E3 · Título" en series, solo el título en
   /// películas. Lo usan el calendario, Próximamente y los avisos.
   String get texto => etiqueta.isNotEmpty ? '$etiqueta · $titulo' : titulo;
 }
+
+/// Primer día del periodo de [fecha] según el [modo] del calendario (el
+/// mismo día, el lunes de la semana, el día 1 del mes o el 1 de enero). Lo
+/// usan el Calendario y Estrenos al cambiar de periodo.
+DateTime inicioDePeriodo(String modo, DateTime fecha) => switch (modo) {
+  'mes' => DateTime(fecha.year, fecha.month, 1),
+  'anio' => DateTime(fecha.year, 1, 1),
+  'semana' => DateTime(
+    fecha.year,
+    fecha.month,
+    fecha.day - (fecha.weekday - 1),
+  ),
+  _ => DateTime(fecha.year, fecha.month, fecha.day), // día y próximos
+};
 
 /// Clave de un día en formato 'yyyy-MM-dd' (para agrupar por día).
 String claveDia(DateTime fecha) =>

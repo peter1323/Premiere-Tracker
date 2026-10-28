@@ -1,4 +1,4 @@
-// CONTROLADOR de la pantalla de Ajustes (sección 6 del menú).
+// CONTROLADOR de la pantalla de Ajustes (sección 7 del menú).
 // Reúne la lógica de idioma, tema, copia de seguridad (exportar/importar
 // JSON de favoritos, vistos y notas) y gestión de usuarios. Vive en el
 // IndexedStack de main.dart, así que NO se destruye al cambiar de sección.

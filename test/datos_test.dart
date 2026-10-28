@@ -383,6 +383,28 @@ void main() {
     );
   });
 
+  test(
+    'el título original se guarda y las copias antiguas lo dejan en null',
+    () {
+      final viejo = FavoritoModel.fromJson({
+        'tipo': 'serie',
+        'fuente': 'tmdb',
+        'id': 1416,
+        'titulo': 'Anatomía de Grey',
+      });
+      expect(viejo.tituloOriginal, isNull); // se completará con TMDB
+      final nuevo = viejo.conValoracion(
+        estado: null,
+        puntuacion: null,
+        tituloOriginal: "Grey's Anatomy",
+      );
+      expect(
+        FavoritoModel.fromJson(nuevo.toJson()).tituloOriginal,
+        "Grey's Anatomy",
+      );
+    },
+  );
+
   test('la sinopsis separa el crédito de origen y quita huecos', () {
     final r = separarCredito('Goku.\n\n\n\nSe aburre.\n(Source: MANGA Plus)');
     expect(r.texto, 'Goku.\n\nSe aburre.');

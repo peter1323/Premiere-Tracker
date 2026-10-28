@@ -27,6 +27,7 @@ import 'services/avisos_service.dart';
 import 'services/clave_service.dart';
 import 'views/ajustes_view.dart';
 import 'views/calendario_view.dart';
+import 'views/estrenos_view.dart';
 import 'views/lista_guardada_view.dart';
 import 'views/inicio_view.dart';
 import 'views/mangas_view.dart';
@@ -195,8 +196,24 @@ class _VistaPrincipalProvisional extends StatefulWidget {
 class _VistaPrincipalProvisionalState
     extends State<_VistaPrincipalProvisional> {
   // Índices del IndexedStack (y de los menús): 0 Inicio, 1 Lectura,
-  // 2 Calendario, 3 Favoritos, 4 Vistos, 5 Notas y 6 Ajustes.
+  // 2 Estrenos, 3 Calendario, 4 Favoritos, 5 Vistos, 6 Notas y 7 Ajustes.
   int _indice = 0;
+
+  // Índice de Estrenos: en el móvil solo se ve en vertical (su calendario
+  // de mes no cabe en horizontal)
+  static const int _indiceEstrenos = 2;
+
+  /// Cambia de sección y, en Android, bloquea la pantalla en vertical
+  /// mientras se está en Estrenos (al salir se puede girar otra vez).
+  void _irA(int i) {
+    setState(() => _indice = i);
+    if (defaultTargetPlatform != TargetPlatform.android) return;
+    SystemChrome.setPreferredOrientations(
+      i == _indiceEstrenos
+          ? const [DeviceOrientation.portraitUp]
+          : const [], // vacío = todas las orientaciones
+    );
+  }
 
   // Notificaciones de escritorio (solo Windows) mientras dure la sesión
   late final AvisosController _avisos;
@@ -205,11 +222,16 @@ class _VistaPrincipalProvisionalState
   void initState() {
     super.initState();
     _avisos = AvisosController(context.read<AppController>())..iniciar();
+    // Completa estados, fechas y títulos originales de lo guardado (para
+    // que el Calendario los tenga aunque no se abra Favoritos)
+    context.read<AppController>().completarDatos();
   }
 
   @override
   void dispose() {
     _avisos.detener();
+    // Al cerrar sesión desde Estrenos, la pantalla vuelve a poder girar
+    SystemChrome.setPreferredOrientations(const []);
     super.dispose();
   }
 
@@ -221,6 +243,7 @@ class _VistaPrincipalProvisionalState
     final pantallas = const [
       InicioView(),
       MangasView(),
+      EstrenosView(),
       CalendarioView(),
       FavoritosView(),
       VistosView(),
@@ -250,7 +273,7 @@ class _VistaPrincipalProvisionalState
         body: SafeArea(child: contenido),
         bottomNavigationBar: MenuInferior(
           indice: _indice,
-          onSeleccionar: (i) => setState(() => _indice = i),
+          onSeleccionar: _irA,
           idioma: idioma,
         ),
       );
@@ -261,11 +284,7 @@ class _VistaPrincipalProvisionalState
       body: Row(
         children: [
           // Menú lateral fijo a la izquierda
-          MenuLateral(
-            indice: _indice,
-            onSeleccionar: (i) => setState(() => _indice = i),
-            idioma: idioma,
-          ),
+          MenuLateral(indice: _indice, onSeleccionar: _irA, idioma: idioma),
           const VerticalDivider(width: 1, thickness: 1),
           // Contenido: barra superior + pantalla seleccionada
           Expanded(child: contenido),

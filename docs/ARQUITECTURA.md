@@ -14,6 +14,7 @@ Aplicación de escritorio (Flutter/Windows) para llevar el seguimiento de
 
 - **Buscar** títulos en varias bases de datos y ver su ficha.
 - **Favoritos** y **Vistos** (leídos, en el caso de los mangas).
+- **Estrenos**: próximos estrenos de series y películas de TMDB, con filtros.
 - **Calendario** de estrenos (solo series y películas; nunca mangas).
 - **Notas** personales (dónde te quedaste, datos sueltos).
 - **Usuarios locales** con PIN, tema (claro/oscuro) e idioma (español/inglés).
@@ -98,11 +99,12 @@ Hay dos tipos de controladores según su duración:
 |--------|---------|-------|-------------|----------|
 | 0 | Inicio | `inicio_view` | `inicio_controller` | Buscador general (TMDB + TVMaze + AniList). |
 | 1 | Lectura | `mangas_view` | `mangas_controller` | Busca mangas/manhwas/novelas (AniList). |
-| 2 | Calendario | `calendario_view` | `calendario_controller` | Estrenos por día/semana/mes (solo series y películas). |
-| 3 | Favoritos | `lista_guardada_view` | `lista_guardada_controller` | Lo guardado, con filtro Todo/Series/Películas/Manga/Novelas. |
-| 4 | Vistos | `lista_guardada_view` | `lista_guardada_controller` | Lo ya visto/leído, con los mismos filtros. |
-| 5 | Notas | `notas_view` | `notas_controller` | Notas personales. |
-| 6 | Ajustes | `ajustes_view` | `ajustes_controller` | Idioma, tema, copia de seguridad, gestión de usuarios. |
+| 2 | Estrenos | `estrenos_view` (+ `filtros_estrenos_view`) | `estrenos_controller` | Próximos estrenos de TMDB con filtros (no solo favoritos), en vistas de mes y día. En el móvil, solo en vertical. |
+| 3 | Calendario | `calendario_view` | `calendario_controller` | Estrenos de tus favoritos por día/semana/mes/año (solo series y películas). |
+| 4 | Favoritos | `lista_guardada_view` | `lista_guardada_controller` | Lo guardado, con filtro Todo/Series/Películas/Manga/Novelas. |
+| 5 | Vistos | `lista_guardada_view` | `lista_guardada_controller` | Lo ya visto/leído, con los mismos filtros. |
+| 6 | Notas | `notas_view` | `notas_controller` | Notas personales. |
+| 7 | Ajustes | `ajustes_view` | `ajustes_controller` | Idioma, tema, copia de seguridad, gestión de usuarios. |
 
 Antes de entrar a la app está la **pantalla de usuarios** (`usuarios_view` +
 `usuarios_controller`), donde se elige usuario y se valida el PIN.

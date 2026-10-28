@@ -1,5 +1,5 @@
-// WIDGETS de navegación. Comparten la lista de los 7 destinos (Inicio,
-// Lectura, Calendario, Favoritos, Vistos, Notas y Ajustes) para no
+// WIDGETS de navegación. Comparten la lista de los 8 destinos (Inicio,
+// Lectura, Estrenos, Calendario, Favoritos, Vistos, Notas y Ajustes) para no
 // repetir iconos y textos: MenuLateral (raíl lateral, pantalla ancha /
 // escritorio) y MenuInferior (barra inferior, móvil). Ambos avisan a
 // main.dart con onSeleccionar() al pulsar un destino, para que cambie el
@@ -18,10 +18,11 @@ class _Destino {
   const _Destino(this.icono, this.iconoSel, this.clave);
 }
 
-/// Los 7 destinos, en el mismo orden que el IndexedStack de main.dart.
+/// Los 8 destinos, en el mismo orden que el IndexedStack de main.dart.
 const List<_Destino> _destinos = [
   _Destino(Icons.home_outlined, Icons.home, 'inicio'),
   _Destino(Icons.menu_book_outlined, Icons.menu_book, 'mangas'),
+  _Destino(Icons.skip_next_outlined, Icons.skip_next, 'estrenos'),
   _Destino(Icons.calendar_month_outlined, Icons.calendar_month, 'calendario'),
   _Destino(Icons.favorite_outline, Icons.favorite, 'favoritos'),
   _Destino(Icons.visibility_outlined, Icons.visibility, 'vistos'),
@@ -29,7 +30,7 @@ const List<_Destino> _destinos = [
   _Destino(Icons.settings_outlined, Icons.settings, 'ajustes'),
 ];
 
-/// Menú lateral fijo con las siete secciones (pantalla ancha: Windows,
+/// Menú lateral fijo con las ocho secciones (pantalla ancha: Windows,
 /// Linux, macOS o tablet en horizontal).
 class MenuLateral extends StatelessWidget {
   final int indice;
@@ -89,7 +90,7 @@ class MenuInferior extends StatelessWidget {
     return NavigationBar(
       selectedIndex: indice,
       onDestinationSelected: onSeleccionar,
-      // Con 7 destinos solo se muestran iconos (la etiqueta sigue
+      // Con 8 destinos solo se muestran iconos (la etiqueta sigue
       // disponible para los lectores de pantalla).
       labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
       destinations: [

@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../models/episodio_model.dart';
+import '../models/filtros_estrenos.dart';
 import '../models/pelicula_model.dart';
 import '../models/persona_model.dart';
 import '../models/serie_model.dart';
@@ -210,6 +211,161 @@ class TmdbService {
     PeliculaModel.fromTmdbBusqueda,
   );
 
+  /// Varias páginas de /discover/{tipo} a la vez, de las más populares a
+  /// las menos, hasta [maxPaginas] (20 títulos por página). La primera dice
+  /// cuántas hay; el resto se piden en paralelo. Cada página se pide también
+  /// en inglés: si un título no está traducido a tu idioma, TMDB devuelve el
+  /// original (p. ej. en coreano) y se usa el inglés, como hace su web.
+  static Future<List<T>> _descubrir<T>(
+    String tipo,
+    Map<String, String> parametros,
+    int maxPaginas,
+    T Function(Map<String, dynamic>) desde,
+  ) async {
+    var totalPaginas = 1; // lo dice la primera página
+    Future<List<dynamic>> pagina(int n) async {
+      Future<Map<String, dynamic>> en(String language) => _get(
+        '/discover/$tipo',
+        parametros: {
+          ...parametros,
+          'language': language,
+          'sort_by': 'popularity.desc',
+          'page': '$n',
+        },
+      );
+      final language = parametros['language'] ?? 'en-US';
+      final propia = await en(language);
+      // El inglés solo se pide si algún título está sin traducir
+      final resultados = propia['results'] as List<dynamic>? ?? const [];
+      final ingles = resultados.any((r) => _sinTraducir(r, language))
+          ? await en('en-US')
+          : const <String, dynamic>{};
+      if (n == 1) totalPaginas = propia['total_pages'] as int? ?? 1;
+      return _conTituloIngles(propia, ingles, language);
+    }
+
+    final primera = await pagina(1);
+    final resto = await Future.wait([
+      for (var n = 2; n <= totalPaginas.clamp(1, maxPaginas); n++) pagina(n),
+    ]);
+    return [
+      for (final r in [...primera, ...resto.expand((p) => p)])
+        desde(r as Map<String, dynamic>),
+    ];
+  }
+
+  /// ¿Tiene [texto] letras de otro alfabeto (más allá del latino)?
+  static bool _otroAlfabeto(String texto) => RegExp(
+    r'\p{L}',
+    unicode: true,
+  ).allMatches(texto).any((letra) => letra[0]!.codeUnitAt(0) > 0x24F);
+
+  /// ¿Viene el título de [r] (película: title; serie: name) sin traducir a
+  /// [language] y en otro alfabeto? (TMDB devuelve entonces el original)
+  static bool _sinTraducir(dynamic r, String language) {
+    if (r is! Map<String, dynamic>) return false;
+    final titulo = r['title'] ?? r['name'];
+    final original = r['original_title'] ?? r['original_name'];
+    return titulo is String &&
+        titulo == original &&
+        r['original_language'] != language.substring(0, 2) &&
+        _otroAlfabeto(titulo);
+  }
+
+  /// Resultados de [propia] con el título de [ingles] en los que TMDB no
+  /// tiene traducción a [language] y el original no se puede leer (otro
+  /// alfabeto: coreano, tailandés...). Un original en catalán o francés se
+  /// deja tal cual. Vale para películas (title) y series (name).
+  static List<dynamic> _conTituloIngles(
+    Map<String, dynamic> propia,
+    Map<String, dynamic> ingles,
+    String language,
+  ) {
+    final enIngles = {
+      for (final r in ingles['results'] as List<dynamic>? ?? const [])
+        r['id']: r['title'] ?? r['name'],
+    };
+    return [
+      for (final r in propia['results'] as List<dynamic>? ?? const [])
+        if (r is Map<String, dynamic>)
+          {
+            ...r,
+            if (_sinTraducir(r, language) && enIngles[r['id']] != null)
+              r.containsKey('title') ? 'title' : 'name': enIngles[r['id']],
+          },
+    ];
+  }
+
+  /// Fecha 'yyyy-MM-dd' para los filtros de TMDB.
+  static String _dia(DateTime fecha) =>
+      fecha.toIso8601String().substring(0, 10);
+
+  /// Disponibilidad elegida en los filtros (vacío = cualquiera).
+  static Map<String, String> _disponibilidad(FiltrosEstrenos f) =>
+      f.todasDisponibilidades
+      ? const {}
+      : {
+          'with_watch_monetization_types': f.monetizacion.join('|'),
+          'watch_region': TmdbRefs.region,
+        };
+
+  /// Películas que se estrenan entre las fechas de los filtros: en España
+  /// todas (hasta 400; "release_date" es el estreno de allí) y en todo el
+  /// mundo las 60 más populares (ahí la fecha puede ser de otro país y el
+  /// controlador busca la buena con [fechasEstreno]).
+  static Future<List<PeliculaModel>> estrenosPeliculas(
+    FiltrosEstrenos f,
+    String language,
+  ) async {
+    if (f.tipos.isEmpty) return [];
+    return _descubrir(
+      'movie',
+      {
+        'language': language,
+        'release_date.gte': _dia(f.desde),
+        'release_date.lte': _dia(f.hasta),
+        'with_release_type': f.tipos.join('|'),
+        if (!f.todosPaises) 'region': TmdbRefs.region,
+        ..._disponibilidad(f),
+      },
+      f.todosPaises ? 3 : 20,
+      PeliculaModel.fromTmdbBusqueda,
+    );
+  }
+
+  // Caché de las fechas de estreno por país (no cambian en la sesión)
+  static final _cacheFechas = CacheFuturos();
+
+  /// Todas las fechas de estreno de la película [id], de todos los países
+  /// (/movie/{id}/release_dates).
+  static Future<List<FechaEstreno>> fechasEstreno(int id) =>
+      _cacheFechas.obtener('fechas-$id', () async {
+        final json = await _get('/movie/$id/release_dates');
+        return TmdbRefs.fechasDeEstreno(json);
+      });
+
+  /// Series con algún episodio entre las fechas de los filtros o, sin
+  /// "todos los episodios", solo las que empiezan en ellas. Todas las que
+  /// haya, hasta 300. Para que coincida con la web, Estrenos la llama día a
+  /// día cuando se quieren todos los episodios.
+  static Future<List<SerieModel>> estrenosSeries(
+    FiltrosEstrenos f,
+    String language,
+  ) {
+    final campo = f.todosEpisodios ? 'air_date' : 'first_air_date';
+    return _descubrir(
+      'tv',
+      {
+        'language': language,
+        '$campo.gte': _dia(f.desde),
+        '$campo.lte': _dia(f.hasta),
+        ..._disponibilidad(f),
+      },
+      15,
+      SerieModel.fromTmdbBusqueda,
+    );
+  }
+
   /// Ficha de una persona (/person/{id}): biografía, nacimiento,
   /// lugar y también el IMDb anexado (external_ids) como puente.
   static Future<PersonaModel> obtenerPersona(int id, String language) async {
@@ -269,12 +425,16 @@ class TmdbService {
     return serie;
   }
 
+  // Caché de temporadas: Estrenos pide cientos y, al volver a aplicar los
+  // filtros, no se repiten.
+  static final _cacheTemporadas = CacheFuturos();
+
   /// Episodios de una temporada (/tv/{id}/season/{n}).
   static Future<List<EpisodioModel>> obtenerEpisodiosTemporada(
     int id,
     int temporada,
     String language,
-  ) async {
+  ) => _cacheTemporadas.obtener('$id-$temporada-$language', () async {
     final json = await _get(
       '/tv/$id/season/$temporada',
       parametros: {'language': language},
@@ -289,7 +449,7 @@ class TmdbService {
         fechaEmision: (m['air_date'] as String?) ?? '',
       );
     }).toList();
-  }
+  });
 
   // Caché de IDs de IMDb: el calendario y Próximamente lo piden para cada
   // serie favorita (a la vez al entrar) y nunca cambia.
