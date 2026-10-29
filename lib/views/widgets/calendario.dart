@@ -551,6 +551,12 @@ class _CalendarioFavoritosState extends State<CalendarioFavoritos>
           color: colorEvento,
           prefijo: e.hora,
           onTap: () => widget.onAbrirEntrada(e),
+          // Portada en la vista Día: en el móvil siempre y en escritorio solo
+          // en Estrenos (el único que usa [siempreLista])
+          conPortada:
+              !esSemana &&
+              (defaultTargetPlatform == TargetPlatform.android ||
+                  widget.siempreLista),
         ),
       if ((porDia[_claveDe(dia)] ?? const []).isEmpty)
         Padding(

@@ -14,12 +14,13 @@ Color colorTextoSobre(Color fondo) =>
 
 /// Tarjeta de color con [prefijo] en negrita a la izquierda (la hora, o el
 /// día y la hora) y "T1E3 · Título" a continuación (con el título original
-/// debajo si lo hay).
+/// debajo si lo hay) y, con [conPortada], la portada a la derecha.
 class FilaEstreno extends StatelessWidget {
   final EntradaCalendario entrada;
   final Color color;
   final String prefijo; // '' para no mostrar nada a la izquierda
   final VoidCallback onTap;
+  final bool conPortada;
 
   const FilaEstreno({
     super.key,
@@ -27,6 +28,7 @@ class FilaEstreno extends StatelessWidget {
     required this.color,
     required this.prefijo,
     required this.onTap,
+    this.conPortada = false,
   });
 
   @override
@@ -78,6 +80,19 @@ class FilaEstreno extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (conPortada && entrada.posterUrl != null) ...[
+                  const SizedBox(width: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: Image.network(
+                      entrada.posterUrl!,
+                      width: 44,
+                      height: 66,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

@@ -23,6 +23,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:premiere_tracker/main.dart';
 import 'package:premiere_tracker/services/avisos_service.dart';
 import 'package:premiere_tracker/services/clave_service.dart';
+import 'package:premiere_tracker/views/widgets/fila_estreno.dart';
 import 'package:premiere_tracker/views/widgets/fila_horizontal.dart';
 import 'package:premiere_tracker/views/widgets/tarjeta_resultado.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -50,9 +51,9 @@ void main() {
     await tester.pumpWidget(const PremiereTrackerApp());
     await tester.pumpAndSettle();
 
-    // Espera a que aparezca algo que depende de la red (máx. 20 s).
-    Future<void> esperar(Finder finder) async {
-      for (var i = 0; i < 80 && finder.evaluate().isEmpty; i++) {
+    // Espera a que aparezca algo que depende de la red (por defecto, máx. 20 s).
+    Future<void> esperar(Finder finder, {int segundos = 20}) async {
+      for (var i = 0; i < segundos * 4 && finder.evaluate().isEmpty; i++) {
         // Espera real: en el dispositivo pump() no deja pasar el tiempo
         await Future<void>.delayed(const Duration(milliseconds: 250));
         await tester.pump();
@@ -291,6 +292,36 @@ void main() {
         avisos.map((a) => a.body),
         contains(contains('Dragon Ball Super')),
       );
+    }
+
+    // --- 5d. Estrenos (necesita la clave de TMDB): con los filtros por
+    // defecto salen los estrenos de hoy y, en la vista Día, con su portada
+    if (_claveTmdb.isNotEmpty) {
+      await ir('Estrenos');
+      expect(
+        find.text('Pulsa Filtros para ver los próximos estrenos'),
+        findsOneWidget,
+      );
+      await pulsar(find.text('Filtros'));
+      await pulsar(find.text('Aceptar').last);
+      await pulsar(
+        find.descendant(
+          of: find.byType(SegmentedButton<String>).first,
+          matching: find.byIcon(Icons.view_day_outlined),
+        ),
+      );
+      await pulsar(find.text('Hoy'));
+      await esperar(
+        find.descendant(
+          of: find.byType(FilaEstreno),
+          matching: find.byType(Image),
+        ),
+        segundos: 60,
+      );
+      // Al pulsar un estreno se abre su ficha
+      await pulsar(find.byType(FilaEstreno));
+      await esperar(find.byType(BackButton));
+      await pulsar(find.byType(BackButton));
     }
 
     // --- 6. Ajustes: idioma y tema ---

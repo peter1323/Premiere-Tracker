@@ -33,12 +33,14 @@ Aplicación multiplataforma para Windows y Android desarrollada con Flutter y Da
 - **Estrenos**: calendario de los **próximos estrenos de TMDB**, no solo de tus favoritos, con las vistas **Mes** (cuántos hay cada día) y **Día** (la lista) y pestañas Series / Películas. Al entrar está vacío: el botón **Filtros** abre una pantalla con los filtros de series y de películas, como en la web de TMDB:
   - **Series**: disponibilidad en España (retransmisión, gratis, anuncios, alquiler, compra), todos los episodios o solo series nuevas, y fechas **desde / hasta** (no se pueden elegir días pasados).
   - **Películas**: disponibilidad, solo España o todos los países, tipo de estreno (en cines, digital, físico, TV...) y fechas.
+  - En la vista **Día** cada estreno lleva su **portada** a la derecha.
   - **Necesita la clave de TMDB**: sin ella esta sección no funciona, porque todos sus datos salen de TMDB.
   - Cada estreno muestra el título en español y, debajo, el **título original**; si no hay traducción y el original es de otro alfabeto (coreano, japonés...), se usa el inglés. Las series se consultan día a día como hace la web y el número de episodio (T5E1) se rellena después, para no hacer esperar. En el móvil esta pantalla solo se ve en vertical.
 - **Calendario** con cuatro vistas y pestañas Series / Películas (solo de tus favoritos):
   - **Día** y **Semana**: flechas para cambiar de periodo y botón morado "Hoy". En Windows, las series van en rejilla por horas y las películas sin horas (lista en Día y siete columnas en Semana); en Android, lista de estrenos por día (con su hora), legible en vertical y en horizontal.
   - **Mes**: rejilla con los estrenos de cada día (en el móvil, solo cuántos hay; al tocar el día se abre su lista), y selector de mes y año (de 2 años atrás a 6 años adelante).
   - **Año**: rejilla de los 12 meses con el número de estrenos de cada uno; al pulsar un mes se abre su vista Mes.
+  - En el móvil, la vista **Día** muestra también la **portada** de cada estreno a la derecha.
   - Cada estreno lleva el **título original** debajo (se guarda con el favorito y, en los guardados antes, se completa solo desde TMDB).
   - Los datos se cargan solo del periodo visible, en paralelo y respetando el límite de peticiones de TVMaze (20 cada 10 segundos, con caché en memoria que comparten el calendario y Próximamente).
 - **Favoritos**: lista con buscador por nombre y filtro Todo / Series / Películas / Manga / Manhwa / Manhua / Novelas / **Personas**, con **cuántos hay** de cada tipo entre paréntesis; en el móvil se pasa de un tipo a otro **deslizando** y la barra de arriba se mueve a la vez. Cada tarjeta muestra el **estado** que da la base de datos (En emisión, En espera, Abandonado, Planeado o Finalizado), tu nota y la cuenta atrás si aún no se ha estrenado («Estrena en 3 días», «¡Hoy estrena!»). Filtro por estado y orden por el de añadido o por tu nota; en Personas, por el de añadido o alfabético.
